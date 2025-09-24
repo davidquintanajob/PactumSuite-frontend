@@ -26,7 +26,7 @@
         v-for="(option, idx) in filteredOptions"
         :key="option[valueKey]"
         :id="optionId(idx)"
-        :class="['px-4 py-2 cursor-pointer', idx === activeIndex ? 'bg-blue-100' : 'hover:bg-gray-100']"
+  :class="['px-4 py-2 cursor-pointer', idx === activeIndex ? 'bg-accent/30' : 'hover:bg-gray-100']"
         @mousedown.prevent="select(option)"
         @mouseenter="activeIndex = idx"
         role="option"

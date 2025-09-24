@@ -11,11 +11,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "primary": "#3362d6",       // Azul oscuro del texto "SOLUTEC" (Pantone 2945 C)
-        "secondary": "#7690b5",     // Gris del eslogan (similar a Cool Gray 9 C)
-        "accent": "#93C5FD",        // Azul claro (para destacar elementos)
-        "neutral": "#FFFFFF",       // Blanco puro (fondo de la imagen)
-        "dark": "#111827"           // Negro suave (contraste elegante)
+        "primary": "#5A4E9D",       // Azul violeta (fondo principal)
+        "secondary": "#C5B6DA",     // Lila claro (logo)
+        "accent": "#7E6FB2",        // Violeta intermedio (botones)
+        "neutral": "#FFFFFF",       // Blanco (limpieza visual)
+        "dark": "#2E225F",          // Violeta profundo (contraste)
+        "success": "#10B981",       // Verde (acciones exitosas)
+        "danger": "#EF4444"         // Rojo (alertas/errores)
       }
     },
   },

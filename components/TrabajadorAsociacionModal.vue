@@ -68,7 +68,7 @@
       <div class="flex-1 flex overflow-hidden">
         <!-- Lista izquierda - Contratos existentes -->
         <div class="w-1/2 border-r border-gray-200 p-4 overflow-y-auto" ref="scrollContainer">
-          <h3 class="text-lg font-semibold mb-4 text-blue-600">Contratos Existentes</h3>
+          <h3 class="text-lg font-semibold mb-4 text-primary">Contratos Existentes</h3>
           <div v-if="isLoading && contratosDisponibles.length === 0" class="flex justify-center items-center py-8">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
@@ -77,7 +77,7 @@
               v-for="contrato in contratosDisponibles" 
               :key="contrato.id_contrato"
               @click="moverContrato(contrato, 'izquierda')"
-              class="p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors"
+              class="p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-accent/10 hover:border-accent/40 transition-colors"
             >
               <div class="flex items-center justify-between">
                 <div class="flex-1">
@@ -108,7 +108,7 @@
               v-for="contrato in contratosAsociados" 
               :key="contrato.id_contrato"
               @click="moverContrato(contrato, 'derecha')"
-              class="p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 transition-colors"
+              class="p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-success/10 hover:border-success/40 transition-colors"
             >
               <div class="flex items-center justify-between">
                 <div class="flex-1">

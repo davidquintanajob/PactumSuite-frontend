@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
       <SeoMeta title="Usuarios - Contract Manager" description="Gestiona usuarios, roles y permisos en Contract Manager." canonical="/usuarios" />
       <Navbar />
       <div v-if="errorBanner"

@@ -49,7 +49,7 @@
                   v-for="action in actions" 
                   :key="action.name"
                   @click="action.handler(item)"
-                  class="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                  class="text-primary hover:brightness-90 flex items-center gap-1"
                   :title="action.name"
                 >
                   <component 

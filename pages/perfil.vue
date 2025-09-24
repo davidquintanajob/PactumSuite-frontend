@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-100 flex flex-col items-center py-12">
+  <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral flex flex-col items-center py-12">
     <Navbar />
     <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg mt-8">
       <h2 class="text-2xl font-bold text-blue-700 mb-6 text-center">Mi Perfil</h2>
@@ -27,7 +27,7 @@
           </div>
           <div class="flex justify-between items-center">
             <span class="font-semibold text-gray-700">Estado:</span>
-            <span :class="user.activo ? 'bg-green-500' : 'bg-red-500'" class="px-3 py-1 rounded-full text-white text-xs font-semibold">
+            <span :class="user.activo ? 'bg-success' : 'bg-danger'" class="px-3 py-1 rounded-full text-neutral text-xs font-semibold">
               {{ user.activo ? 'Activo' : 'Inactivo' }}
             </span>
           </div>

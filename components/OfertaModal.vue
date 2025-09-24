@@ -61,7 +61,7 @@
                 v-if="!isViewing && descripciones.length < 15" 
                 type="button"
                 @click="addDescripcion"
-                class="w-full px-4 py-2 text-blue-600 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-400 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                class="w-full px-4 py-2 text-primary border-2 border-dashed border-accent/60 rounded-lg hover:border-accent/80 hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                 :disabled="isLoading"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -123,7 +123,7 @@
                 />
                 <div class="px-4 py-2 rounded-lg border-2 transition-all duration-200 flex items-center"
                      :class="formData.estado === 'facturada' 
-                       ? 'bg-blue-500 border-blue-600 text-white shadow-md' 
+                       ? 'bg-primary border-primary text-neutral shadow-md' 
                        : 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200'">
                   <div class="w-4 h-4 border-2 border-current rounded-full mr-3 flex items-center justify-center">
                     <div v-if="formData.estado === 'facturada'" class="w-2 h-2 bg-white rounded-full"></div>

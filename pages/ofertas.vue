@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta title="Ofertas - Contract Manager" description="Consulta y administra ofertas asociadas a contratos." canonical="/ofertas" />
     <Navbar />
     <div v-if="errorBanner"
@@ -21,7 +21,7 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por descripción</label>
           <div class="relative">
             <input type="text" v-model="descripcion" placeholder="Ingrese la descripción..."
-              class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch">
             <div class="absolute left-3 top-2.5">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
@@ -34,7 +34,7 @@
         </div> -->
         <!-- Botón para mostrar/ocultar filtros en móvil -->
         <div class="md:hidden flex justify-between items-center mb-4">
-          <button @click="showFilters = !showFilters" class="flex items-center text-blue-500 hover:text-blue-600">
+          <button @click="showFilters = !showFilters" class="flex items-center text-primary hover:brightness-90">
             <span class="mr-2">Filtros adicionales</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform transition-transform"
               :class="{ 'rotate-180': showFilters }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -48,14 +48,14 @@
           <div class="w-full">
             <label class="block text-sm font-medium text-gray-700 mb-1">Fecha inicio</label>
             <input type="date" v-model="fecha_inicio"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch">
           </div>
           <!-- Fecha fin -->
           <div class="w-full">
             <label class="block text-sm font-medium text-gray-700 mb-1">Fecha fin</label>
             <input type="date" v-model="fecha_fin"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch">
           </div>
           <!-- Usuario -->
@@ -75,11 +75,11 @@
         <!-- Botón de búsqueda -->
         <div class="flex justify-end mt-4 gap-2">
           <button @click="handleSearch"
-            class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+            class="px-6 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
             Buscar
           </button>
           <button @click="exportToExcel"
-            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+            class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors">
             Exportar a Excel
           </button>
         </div>
@@ -90,7 +90,7 @@
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Ofertas</h2>
         <button @click="nuevaOferta"
-          class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center">
+          class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -162,7 +162,7 @@ const ofertasColumns = [
       const estado = value.toLowerCase();
       switch (estado) {
         case 'facturada':
-          return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Facturada</span>';
+          return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent/30 text-primary">Facturada</span>';
         case 'vigente':
           return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Vigente</span>';
         case 'vencida':

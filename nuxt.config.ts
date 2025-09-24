@@ -24,7 +24,7 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Platforma para la gestión eficiente de contratos, entidades y trabajadores.' },
-        { name: 'theme-color', content: '#0ea5e9' },
+  { name: 'theme-color', content: '#93C5FD' },
         { name: 'keywords', content: 'contratos, gestión, trabajadores, entidades, ofertas' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'es_ES' },
@@ -32,7 +32,7 @@ export default defineNuxtConfig({
         { name: 'twitter:card', content: 'summary_large_image' }
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/logo.jpeg' },
+        { rel: 'icon', type: 'image/png', href: '/logo.png' },
         { rel: 'canonical', href: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000' }
       ],
       script: [
@@ -44,7 +44,7 @@ export default defineNuxtConfig({
             "@type": "Organization",
             "name": "Contract Manager",
             "url": process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-            "logo": (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/logo.jpeg'
+            "logo": (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/logo.png'
           })
         }
       ]

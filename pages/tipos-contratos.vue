@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta title="Tipos de Contrato - Contract Manager" description="Gestiona los diferentes tipos de contrato disponibles." canonical="/tipos-contratos" />
     <Navbar />
     <div v-if="errorBanner"

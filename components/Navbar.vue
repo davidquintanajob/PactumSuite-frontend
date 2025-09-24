@@ -23,7 +23,7 @@
                 class="container mx-auto flex justify-between items-center py-4 px-6 md:flex-col md:items-start md:justify-start md:py-6 md:h-full">
                 <div class="hidden md:flex md:items-center relative">
                     <h1 @click="goHome" class="text-white text-3xl md:text-4xl font-sans font-bold tracking-tight mr-4 cursor-pointer select-none">
-                        SOLUTEL
+                        PACTUM
                     </h1>
                     <div class="relative flex flex-col items-center justify-center">
                         <a @click="toggleUserMenu"
@@ -31,8 +31,8 @@
                             <img src="/usuario.png" alt="Usuario"
                                 class="w-3/4 h-3/4 object-cover transition duration-300 hover:opacity-75 mix-blend-screen invert hover:invert(0)" />
                         </a>
-                        <span v-if="isConnected" class="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs bg-green-500 text-white shadow z-10">Conectado</span>
-                        <span v-else class="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs bg-red-500 text-white shadow z-10">Desconectado</span>
+                        <span v-if="isConnected" class="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs bg-success text-neutral shadow z-10">Conectado</span>
+                        <span v-else class="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs bg-danger text-neutral shadow z-10">Desconectado</span>
                     </div>
                 </div>
 

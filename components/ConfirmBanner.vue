@@ -12,7 +12,7 @@
       <div class="font-bold text-base mb-1">{{ title }}</div>
       <div class="text-sm mb-2">{{ description }}</div>
       <div class="flex gap-2 mt-2">
-        <button @click="$emit('confirm')" class="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Sí</button>
+  <button @click="$emit('confirm')" class="px-4 py-1 bg-primary text-neutral rounded hover:bg-primary/90">Sí</button>
         <button @click="$emit('close')" class="px-4 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">No</button>
       </div>
     </div>

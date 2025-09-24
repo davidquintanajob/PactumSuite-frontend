@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta title="Trabajadores - Contract Manager" description="Registra y gestiona trabajadores autorizados y sus contratos." canonical="/trabajadores" />
     <Navbar />
     <div v-if="errorBanner"
@@ -27,7 +27,7 @@
                 type="text"
                 v-model="searchNombre"
                 placeholder="Ingrese el nombre..."
-                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
                 @keyup.enter="handleSearch"
               >
               <div class="absolute left-3 top-2.5">
@@ -43,7 +43,7 @@
               type="text"
               v-model="searchCargo"
               placeholder="Ingrese el cargo..."
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch"
             />
           </div>

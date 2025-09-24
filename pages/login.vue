@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 bg-gray-100">
+  <div class="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta title="Iniciar Sesión - Contract Manager" description="Accede a Contract Manager para gestionar contratos y entidades." canonical="/login" />
     <div class="sm:mx-auto sm:w-full sm:max-w-sm">
       <img class="mx-auto h-24 w-24 rounded-full shadow mt-8" src="/logo.jpeg" alt="Logo" />
@@ -47,7 +47,7 @@
         <div>
           <button
             type="submit"
-            class="flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            class="flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-neutral shadow hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Ingresar
           </button>

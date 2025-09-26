@@ -100,7 +100,7 @@
       </div>
       <DataTable :columns="ofertasColumns" :items="itemsData" :actions="ofertasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
-        @page-change="handlePageChange" />
+        @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
     <!-- Modal de Oferta (estructura base, puedes personalizarla luego) -->
     <OfertaModal v-model="showModal" :oferta="selectedOferta" :is-editing="isEditing" :is-viewing="isViewing"
@@ -306,6 +306,11 @@ const handlePageChange = (newPage) => {
   fetchItems(newPage, itemsPorPage.value, fecha_inicio.value, fecha_fin.value, id_contrato.value, id_usuario.value, '');
 };
 
+// Abrir modal al hacer click en la fila
+const handleRowClick = (item) => {
+  abrirModalOferta(item, 'ver');
+};
+
 onMounted(() => {
   fetchUsuariosYContratos();
   fetchItems(1, itemsPorPage.value, '', '', '', '', '');
@@ -344,7 +349,7 @@ async function abrirModalOferta(item, modo) {
 // Modificar las acciones para usar abrirModalOferta
 const ofertasActions = [
   {
-    name: 'Ver Detalles',
+    name: 'Editar',
     icon: {
       render() {
         return h('svg', {
@@ -358,13 +363,13 @@ const ofertasActions = [
             'stroke-linecap': 'round',
             'stroke-linejoin': 'round',
             'stroke-width': '2',
-            d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
+            d: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
           })
         ])
       }
     },
     handler: (item) => {
-      abrirModalOferta(item, 'ver');
+      abrirModalOferta(item, 'editar');
     }
   },
   {

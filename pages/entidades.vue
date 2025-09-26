@@ -128,9 +128,9 @@
           Nueva Entidad
         </button>
       </div>
-      <DataTable :columns="entidadesColumns" :items="itemsData" :actions="entidadesActions" :total-items="totalItems"
-        :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
-        @page-change="handlePageChange" />
+    <DataTable :columns="entidadesColumns" :items="itemsData" :actions="entidadesActions" :total-items="totalItems"
+      :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
+      @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
 
     <!-- Modal de Entidad -->
@@ -261,45 +261,20 @@ const handlePageChange = (newPage) => {
   fetchItems(newPage, itemsPorPage.value);
 };
 
+// Abrir modal en modo ver al hacer click en una fila
+const handleRowClick = (item) => {
+  selectedEntidad.value = item;
+  isEditing.value = false;
+  isViewing.value = true;
+  showModal.value = true;
+};
+
 // Cargar datos cuando el componente se monte
 onMounted(() => {
   fetchItems(1, itemsPorPage.value);
 });
 
 const entidadesActions = [
-    {
-      name: 'Ver Detalles',
-      icon: {
-        render() {
-          return h('svg', {
-            xmlns: 'http://www.w3.org/2000/svg',
-            class: 'h-5 w-5',
-            fill: 'none',
-            viewBox: '0 0 24 24',
-            stroke: 'currentColor'
-          }, [
-            h('path', {
-              'stroke-linecap': 'round',
-              'stroke-linejoin': 'round',
-              'stroke-width': '2',
-              d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z'
-            }),
-            h('path', {
-              'stroke-linecap': 'round',
-              'stroke-linejoin': 'round',
-              'stroke-width': '2',
-              d: 'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
-            })
-          ])
-        }
-      },
-      handler: (item) => {
-      selectedEntidad.value = item;
-      isEditing.value = false;
-      isViewing.value = true;
-      showModal.value = true;
-      }
-    },
     {
       name: 'Editar',
       icon: {

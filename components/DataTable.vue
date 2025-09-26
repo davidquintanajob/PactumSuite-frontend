@@ -32,7 +32,8 @@
             </td>
           </tr>
           <!-- Datos de la tabla -->
-          <tr v-else v-for="(item, index) in paginatedItems" :key="index" class="hover:bg-gray-50">
+          <tr v-else v-for="(item, index) in paginatedItems" :key="index" class="hover:bg-gray-50" tabindex="0"
+            @click="() => $emit('row-click', item)" @keydown.enter="() => $emit('row-click', item)">
             <td 
               v-for="column in columns" 
               :key="column.key"
@@ -48,7 +49,7 @@
                 <button 
                   v-for="action in actions" 
                   :key="action.name"
-                  @click="action.handler(item)"
+                  @click.stop="action.handler(item)"
                   class="text-primary hover:brightness-90 flex items-center gap-1"
                   :title="action.name"
                 >

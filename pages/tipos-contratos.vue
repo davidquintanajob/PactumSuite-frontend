@@ -40,6 +40,7 @@
         :current-page="currentPage"
         :is-loading="isLoading"
         @page-change="handlePageChange"
+        @row-click="handleRowClick"
       />
       <TipoContratoModal
         v-model="showModal"
@@ -299,6 +300,14 @@ const entidadesActions = [
     }
   }
 ];
+
+// Abrir modal al hacer click en la fila
+const handleRowClick = (item) => {
+  selectedTipoContrato.value = { ...item };
+  isEditing.value = false;
+  isViewing.value = true;
+  showModal.value = true;
+};
 
 // Función para abrir el modal en modo creación
 function nuevoTipoContrato() {

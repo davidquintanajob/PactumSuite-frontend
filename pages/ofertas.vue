@@ -320,7 +320,7 @@ const deleteIcon = {
   render() {
     return h('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
-      class: 'h-6 w-6 text-red-500',
+      class: 'h-6 w-6 text-neutral',
       fill: 'none',
       viewBox: '0 0 24 24',
       stroke: 'currentColor'
@@ -365,36 +365,13 @@ const ofertasActions = [
             'stroke-width': '2',
             d: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
           })
-        ])
+        ]);
       }
     },
     handler: (item) => {
       abrirModalOferta(item, 'editar');
-    }
-  },
-  {
-    name: 'Editar',
-    icon: {
-      render() {
-        return h('svg', {
-          xmlns: 'http://www.w3.org/2000/svg',
-          class: 'h-5 w-5',
-          fill: 'none',
-          viewBox: '0 0 24 24',
-          stroke: 'currentColor'
-        }, [
-          h('path', {
-            'stroke-linecap': 'round',
-            'stroke-linejoin': 'round',
-            'stroke-width': '2',
-            d: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-          })
-        ])
-      }
     },
-    handler: (item) => {
-      abrirModalOferta(item, 'editar');
-    }
+    buttonClass: 'px-3 py-1 bg-accent text-neutral rounded-md hover:bg-accent/90'
   },
   {
     name: 'Ver PDF',
@@ -413,22 +390,23 @@ const ofertasActions = [
             'stroke-width': '2',
             d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
           })
-        ])
+        ]);
       }
     },
     handler: (item) => {
       ofertaParaPDF.value = { ...item };
       showModalPDF.value = true;
-    }
+    },
+    buttonClass: 'px-3 py-1 bg-primary text-neutral rounded-md hover:bg-primary/90'
   },
   {
     name: 'Eliminar',
     icon: deleteIcon,
-    iconOnly: true,
     handler: (item) => {
       ofertaAEliminar.value = item;
       showConfirmBanner.value = true;
-    }
+    },
+    buttonClass: 'px-3 py-1 bg-danger text-neutral rounded-md hover:bg-danger/90'
   }
 ];
 

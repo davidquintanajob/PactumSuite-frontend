@@ -295,6 +295,7 @@ const entidadesActions = [
           ])
         }
       },
+  buttonClass: 'px-3 py-1 bg-accent text-neutral rounded-md hover:bg-accent/90',
       handler: (item) => {
       selectedEntidad.value = item;
       isEditing.value = true;
@@ -322,7 +323,7 @@ const entidadesActions = [
           ])
         }
       },
-      iconOnly: true,
+  buttonClass: 'px-3 py-1 bg-danger text-neutral rounded-md hover:bg-danger/90',
       handler: (item) => {
       entidadAEliminar.value = item;
       showConfirmBanner.value = true;
@@ -439,7 +440,7 @@ const deleteIcon = {
   render() {
     return h('svg', {
       xmlns: 'http://www.w3.org/2000/svg',
-      class: 'h-6 w-6 text-red-500',
+      class: 'h-6 w-6 text-neutral',
       fill: 'none',
       viewBox: '0 0 24 24',
       stroke: 'currentColor'

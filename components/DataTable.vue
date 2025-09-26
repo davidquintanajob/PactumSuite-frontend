@@ -46,20 +46,28 @@
             </td>
             <td v-if="actions" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex justify-end space-x-2">
-                <button 
-                  v-for="action in actions" 
-                  :key="action.name"
-                  @click.stop="action.handler(item)"
-                  class="text-primary hover:brightness-90 flex items-center gap-1"
-                  :title="action.name"
-                >
-                  <component 
-                    v-if="action.icon" 
-                    :is="action.icon" 
-                    class="h-5 w-5"
-                  />
-                  <span v-if="!action.iconOnly">{{ action.name }}</span>
-                </button>
+                <div v-for="action in actions" :key="action.name">
+                  <!-- If action provides buttonClass, render a styled button -->
+                  <button
+                    v-if="action.buttonClass"
+                    @click.stop="action.handler(item)"
+                    :class="action.buttonClass + ' flex items-center gap-2'"
+                    :title="action.name"
+                  >
+                    <component v-if="action.icon" :is="action.icon" class="h-5 w-5" />
+                    <span v-if="!action.iconOnly">{{ action.name }}</span>
+                  </button>
+                  <!-- Fallback: plain text button (previous behaviour) -->
+                  <button
+                    v-else
+                    @click.stop="action.handler(item)"
+                    class="text-primary hover:brightness-90 flex items-center gap-1"
+                    :title="action.name"
+                  >
+                    <component v-if="action.icon" :is="action.icon" class="h-5 w-5" />
+                    <span v-if="!action.iconOnly">{{ action.name }}</span>
+                  </button>
+                </div>
               </div>
             </td>
           </tr>

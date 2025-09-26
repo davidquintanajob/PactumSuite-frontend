@@ -152,8 +152,6 @@
 <script setup>
 // ...existing code...
 import { ref, reactive, watch, nextTick } from 'vue';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 const props = defineProps({
   show: Boolean,
@@ -341,6 +339,15 @@ async function exportarPDF() {
   modoLectura.value = true;
   await nextTick();
   try {
+    // Only import heavy browser libraries on the client when needed
+    if (typeof window === 'undefined') {
+      console.warn('exportarPDF called on server - aborting');
+      return;
+    }
+    const html2canvasModule = await import('html2canvas');
+    const html2canvas = html2canvasModule && (html2canvasModule.default || html2canvasModule);
+    const jsPDFModule = await import('jspdf');
+    const jsPDF = jsPDFModule && (jsPDFModule.jsPDF || jsPDFModule.default || jsPDFModule);
     // Esperar un poco más para que todos los elementos se rendericen correctamente
     await new Promise(resolve => setTimeout(resolve, 100));
     const element = pdfContent.value;

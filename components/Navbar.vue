@@ -1,13 +1,13 @@
 <template>
     <!-- Contenedor principal -->
-    <div class="relative">
+    <div class="relative" ref="navRoot">
         <!-- Botón de toggle (SOLO DESKTOP) - Fijo en la pantalla -->
-        <button @click="toggleNav"
+                <button @click="toggleNav"
             class="hidden md:flex items-center fixed z-50 bg-accent text-white rounded-r-full h-16 pr-4 shadow-lg hover:bg-accent-dark transition-all duration-300 ease-in-out"
             :style="{ left: isNavCollapsed ? '0px' : '255px', right: 'auto', width: isNavCollapsed ? 'auto' : 'auto', top: '200px' }">
             <!-- Icono -->
             <div class="flex items-center justify-center w-8 h-16">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                <svg xmlns="http://www.w3.org/2000/svg" :class="['h-5 w-5', isChevronAnimating ? 'chevron-wobble' : '']" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         :d="isNavCollapsed ? 'M13 5l7 7-7 7' : 'M11 19l-7-7 7-7'" />
@@ -42,7 +42,7 @@
                 </h1>
 
                 <!-- Menú hamburguesa (Móvil) - SIN CAMBIOS -->
-                <button @click="isMenuOpen = !isMenuOpen"
+                <button @click="toggleMenu"
                     class="md:hidden text-white focus:outline-none transition duration-300">
                     <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor">
@@ -121,8 +121,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { navigateTo } from 'nuxt/app';
+
+const navRoot = ref(null);
 
 // Estado del navbar colapsado (solo desktop)
 const isNavCollapsed = ref(true);
@@ -134,9 +136,15 @@ const isUserMenuOpen = ref(false);
 // Estado de conexión
 const isConnected = ref(false);
 
+// Chevron wobble animation state
+const isChevronAnimating = ref(false);
+let chevronInterval = null;
+
 // Función para alternar el estado del navbar
 const toggleNav = () => {
     isNavCollapsed.value = !isNavCollapsed.value;
+    // start or clear inactivity timer depending on expanded/collapsed
+    if (!isNavCollapsed.value) startInactivityTimer(); else clearInactivityTimer();
 };
 
 // Opciones de navegación
@@ -152,6 +160,14 @@ const options = [
 // Función para alternar el menú de usuario
 const toggleUserMenu = () => {
     isUserMenuOpen.value = !isUserMenuOpen.value;
+    // start/clear inactivity timer when opening/closing user menu
+    if (isUserMenuOpen.value) startInactivityTimer(); else clearInactivityTimer();
+};
+
+// Función para alternar el menú móvil (hamburguesa)
+const toggleMenu = () => {
+    isMenuOpen.value = !isMenuOpen.value;
+    if (isMenuOpen.value) startInactivityTimer(); else clearInactivityTimer();
 };
 
 function goHome() {
@@ -179,6 +195,9 @@ function handlePerfilClick() {
 
 function handleNavigation(link) {
     const token = localStorage.getItem('token');
+    // collapse navbar when navigating and clear inactivity timer
+    isNavCollapsed.value = true;
+    clearInactivityTimer();
     if (token) {
         navigateTo(link);
     } else {
@@ -193,5 +212,116 @@ onMounted(() => {
         localStorage.setItem('hasVisitedNavbar', 'true');
     }
     isConnected.value = !!localStorage.getItem('token');
+    
+    // Set up click-outside and Escape key handlers to close menus
+    // Define handlers in outer scope variables so we can remove them on unmount
+    onDocClick = (e) => {
+        if (!navRoot.value) return;
+        const target = e.target || e;
+        if (!navRoot.value.contains(target)) {
+            // If user clicked/touched outside the navbar area, close menus
+            if (!isNavCollapsed.value) isNavCollapsed.value = true;
+            if (isMenuOpen.value) isMenuOpen.value = false;
+            if (isUserMenuOpen.value) isUserMenuOpen.value = false;
+        }
+    };
+
+    onKeydown = (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            if (!isNavCollapsed.value) isNavCollapsed.value = true;
+            if (isMenuOpen.value) isMenuOpen.value = false;
+            if (isUserMenuOpen.value) isUserMenuOpen.value = false;
+        }
+    };
+
+    document.addEventListener('click', onDocClick);
+    document.addEventListener('touchstart', onDocClick);
+    document.addEventListener('keydown', onKeydown);
+    // Reset inactivity timer when interacting inside the navbar
+    if (navRoot.value && navRoot.value.addEventListener) {
+        navRoot.value.addEventListener('click', resetInactivityTimer);
+        navRoot.value.addEventListener('touchstart', resetInactivityTimer);
+    }
+
+    // Start chevron interval which will trigger wobble every 5s only when collapsed
+    chevronInterval = setInterval(() => {
+        if (isNavCollapsed.value) {
+            // Trigger short animation (match CSS duration below)
+            isChevronAnimating.value = true;
+            setTimeout(() => { isChevronAnimating.value = false; }, 1200); // animation duration
+        }
+    }, 5000);
 });
+
+let onDocClick = null;
+let onKeydown = null;
+let inactivityTimeout = null;
+const INACTIVITY_MS = 10000; // 10 seconds
+
+function clearInactivityTimer() {
+    if (inactivityTimeout) {
+        clearTimeout(inactivityTimeout);
+        inactivityTimeout = null;
+    }
+}
+
+function startInactivityTimer() {
+    clearInactivityTimer();
+    // only start timer if any menu is open (desktop expanded or mobile/user menus)
+    if (!isNavCollapsed.value || isMenuOpen.value || isUserMenuOpen.value) {
+        inactivityTimeout = setTimeout(() => {
+            isNavCollapsed.value = true;
+            isMenuOpen.value = false;
+            isUserMenuOpen.value = false;
+            inactivityTimeout = null;
+        }, INACTIVITY_MS);
+    }
+}
+
+function resetInactivityTimer() {
+    // Reset only if some menu is open
+    if (!isNavCollapsed.value || isMenuOpen.value || isUserMenuOpen.value) {
+        startInactivityTimer();
+    }
+}
+
+onUnmounted(() => {
+    if (onDocClick) {
+        document.removeEventListener('click', onDocClick);
+        document.removeEventListener('touchstart', onDocClick);
+    }
+    if (onKeydown) {
+        document.removeEventListener('keydown', onKeydown);
+    }
+    if (navRoot.value && navRoot.value.removeEventListener) {
+        navRoot.value.removeEventListener('click', resetInactivityTimer);
+        navRoot.value.removeEventListener('touchstart', resetInactivityTimer);
+    }
+    clearInactivityTimer();
+        if (chevronInterval) {
+                clearInterval(chevronInterval);
+                chevronInterval = null;
+        }
+
+});
+
 </script>
+
+<style scoped>
+.chevron-wobble {
+    animation: chevron-wobble 1.2s cubic-bezier(.36,.07,.19,.97);
+    transform-origin: center;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,0.15));
+}
+
+@keyframes chevron-wobble {
+    0% { transform: translateX(0) rotate(0deg) scale(1); }
+    12% { transform: translateX(-6px) rotate(-12deg) scale(1.05); }
+    25% { transform: translateX(10px) rotate(14deg) scale(1.08); }
+    45% { transform: translateX(-8px) rotate(-8deg) scale(1.03); }
+    65% { transform: translateX(6px) rotate(6deg) scale(1.02); }
+    85% { transform: translateX(-3px) rotate(-3deg) scale(1.01); }
+    100% { transform: translateX(0) rotate(0deg) scale(1); }
+}
+</style>
+ 

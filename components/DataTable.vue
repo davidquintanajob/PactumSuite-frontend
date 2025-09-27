@@ -34,10 +34,13 @@
           <!-- Datos de la tabla -->
           <tr v-else v-for="(item, index) in paginatedItems" :key="index" class="hover:bg-gray-50" tabindex="0"
             @click="() => $emit('row-click', item)" @keydown.enter="() => $emit('row-click', item)">
-            <td 
-              v-for="(column, colIndex) in columns" 
+            <td
+              v-for="(column, colIndex) in columns"
               :key="column.key"
-              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+              :class="[
+                'px-6 py-4 text-sm text-gray-900',
+                colIndex === 0 ? 'whitespace-normal max-w-xs break-words' : 'whitespace-nowrap'
+              ]"
             >
               <!-- For the first column, render a relative container so we can overlay the note icon without changing layout -->
               <div v-if="colIndex === 0" class="relative pr-6">

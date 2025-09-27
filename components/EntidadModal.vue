@@ -137,6 +137,32 @@
               placeholder="Ingrese el código NIT"
             />
           </div>
+
+          <!-- Organismo -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Organismo</label>
+            <input
+              v-model="formData.organismo"
+              type="text"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :readonly="props.isViewing"
+              :disabled="props.isViewing || isLoading"
+              placeholder="Ingrese el organismo"
+            />
+          </div>
+
+          <!-- Consecutivo -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Consecutivo</label>
+            <input
+              v-model="formData.consecutivo"
+              type="text"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :readonly="props.isViewing"
+              :disabled="props.isViewing || isLoading"
+              placeholder="Ingrese el consecutivo"
+            />
+          </div>
         </div>
 
         <!-- Botones de acción -->
@@ -218,7 +244,9 @@ const formData = ref({
   cuenta_bancaria: '',
   tipo_entidad: '',
   codigo_reeup: '',
-  codigo_nit: ''
+  codigo_nit: '',
+  organismo: '',
+  consecutivo: ''
 });
 
 const errorMsg = ref('');
@@ -239,7 +267,9 @@ watch(() => props.entidad, (newEntidad) => {
       cuenta_bancaria: '',
       tipo_entidad: '',
       codigo_reeup: '',
-      codigo_nit: ''
+      codigo_nit: '',
+      organismo: '',
+      consecutivo: ''
     };
   }
 }, { immediate: true });

@@ -49,7 +49,7 @@
           </div>
   
         <!-- Campos adicionales (colapsables en móvil) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
           :class="{ 'hidden md:grid': !showFilters }">
           <!-- Buscar por descripción -->
           <div class="w-full">
@@ -99,6 +99,22 @@
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               @keyup.enter="handleSearch">
             </div>
+
+          <!-- Organismo -->
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Organismo</label>
+            <input type="text" v-model="organismo" placeholder="Ingrese organismo"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+
+          <!-- Consecutivo -->
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Consecutivo</label>
+            <input type="text" v-model="consecutivo" placeholder="Ingrese consecutivo"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
           </div>
   
           <!-- Botón de búsqueda y exportar -->
@@ -158,6 +174,8 @@ const cuenta_bancaria = ref('');
 const tipo_entidad = ref('');
 const codigo_reo = ref('');
 const codigo_nit = ref('');
+const organismo = ref('');
+const consecutivo = ref('');
   const showFilters = ref(false);
   
 // Variables para el modal
@@ -172,9 +190,9 @@ const config = useRuntimeConfig();
 
 // Configuración de la tabla de Entidades
 const entidadesColumns = [
-  { key: 'id_entidad', label: 'ID' },
+  { key: 'consecutivo', label: 'Consecutivo' },
   { key: 'nombre', label: 'Nombre de la Entidad' },
-  { key: 'telefono', label: 'Teléfono' },
+  { key: 'organismo', label: 'Organismo' },
   { key: 'cuenta_bancaria', label: 'Cuenta Bancaria' },
   { key: 'tipo_entidad', label: 'Tipo de Entidad' },
   { key: 'codigo_reo', label: 'Reo' },
@@ -191,7 +209,7 @@ const itemsPorPage = ref(20);
 const itemsData = ref([]);
 
 // Función para cargar datos de la API
-const fetchItems = async (page = 1, limit = 20, nombre = '', direccion = '', telefono = '', cuenta_bancaria = '', tipo_entidad = '', codigo_reo = '', codigo_nit = '') => {
+const fetchItems = async (page = 1, limit = 20, nombre = '', direccion = '', telefono = '', cuenta_bancaria = '', tipo_entidad = '', codigo_reo = '', codigo_nit = '', organismo = '', consecutivo = '') => {
   try {
     isLoading.value = true;
 
@@ -207,7 +225,9 @@ const fetchItems = async (page = 1, limit = 20, nombre = '', direccion = '', tel
       cuenta_bancaria: cuenta_bancaria,
       tipo_entidad: tipo_entidad,
       codigo_reo: codigo_reo,
-      codigo_nit: codigo_nit
+      codigo_nit: codigo_nit,
+      organismo: organismo,
+      consecutivo: consecutivo
     };
 
     const response = await fetch(`${config.public.backendHost}/entidad/filter/${page}/${limit}`, {
@@ -258,7 +278,7 @@ const fetchItems = async (page = 1, limit = 20, nombre = '', direccion = '', tel
 // Manejador de eventos para la paginación
 const handlePageChange = (newPage) => {
   currentPage.value = newPage;
-  fetchItems(newPage, itemsPorPage.value);
+  fetchItems(newPage, itemsPorPage.value, nombre.value, direccion.value, telefono.value, cuenta_bancaria.value, tipo_entidad.value, codigo_reo.value, codigo_nit.value, organismo.value, consecutivo.value);
 };
 
 // Abrir modal en modo ver al hacer click en una fila
@@ -271,7 +291,7 @@ const handleRowClick = (item) => {
 
 // Cargar datos cuando el componente se monte
 onMounted(() => {
-  fetchItems(1, itemsPorPage.value);
+  fetchItems(1, itemsPorPage.value, nombre.value, direccion.value, telefono.value, cuenta_bancaria.value, tipo_entidad.value, codigo_reo.value, codigo_nit.value, organismo.value, consecutivo.value);
 });
 
 const entidadesActions = [
@@ -334,7 +354,7 @@ const entidadesActions = [
 const handleSearch = async () => {
   try {
     isLoading.value = true
-    await fetchItems(1, itemsPorPage.value, nombre.value, direccion.value, telefono.value, cuenta_bancaria.value, tipo_entidad.value, codigo_reo.value, codigo_nit.value)
+    await fetchItems(1, itemsPorPage.value, nombre.value, direccion.value, telefono.value, cuenta_bancaria.value, tipo_entidad.value, codigo_reo.value, codigo_nit.value, organismo.value, consecutivo.value)
   } catch (error) {
     console.error('Error al buscar entidades:', error)
   } finally {
@@ -519,7 +539,9 @@ function exportToExcel() {
   // Selecciona solo las columnas visibles en la tabla
   const exportData = itemsData.value.map(item => ({
     'ID': item.id_entidad,
+    'Consecutivo': item.consecutivo,
     'Nombre de la Entidad': item.nombre,
+    'Organismo': item.organismo,
     'Teléfono': item.telefono,
     'Cuenta Bancaria': item.cuenta_bancaria,
     'Tipo de Entidad': item.tipo_entidad,

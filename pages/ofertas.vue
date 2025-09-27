@@ -14,7 +14,7 @@
         @confirm="confirmDeleteOferta" @close="showConfirmBanner = false" />
     </div>
     <!-- Barra de búsqueda y filtros -->
-    <div class="container mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
+    <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
       <div class="bg-white rounded-lg shadow-md p-4">
         <!-- Campo de búsqueda principal (por descripción) - ELIMINADO -->
         <!-- <div class="mb-4">
@@ -86,7 +86,7 @@
       </div>
     </div>
     <!-- Tabla de ofertas -->
-    <div class="container mx-auto px-4 py-4">
+    <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Ofertas</h2>
         <button @click="nuevaOferta"

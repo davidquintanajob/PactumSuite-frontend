@@ -17,7 +17,7 @@
       />
     </div>
     <!-- Barra de búsqueda y filtros -->
-    <div class="container mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
+    <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
       <div class="bg-white rounded-lg shadow-md p-4">
         <div class="flex flex-col md:flex-row gap-2 items-center mb-4 md:mb-2">
           <div class="w-full md:w-1/4">
@@ -83,7 +83,7 @@
       </div>
     </div>
     <!-- Tabla de Trabajadores -->
-    <div class="container mx-auto px-4 py-4">
+    <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Trabajadores Autorizados</h2>
         <button @click="nuevaTrabajador"

@@ -18,7 +18,7 @@
       />
     </div>
       <!-- Barra de búsqueda y filtros -->
-      <div class="container mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
+      <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
         <div class="bg-white rounded-lg shadow-md p-4">
         <!-- Campo de búsqueda principal (siempre visible) -->
         <div class="mb-4">
@@ -51,11 +51,11 @@
         <!-- Campos adicionales (colapsables en móvil) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
           :class="{ 'hidden md:grid': !showFilters }">
-          <!-- Buscar por descripción -->
+          <!-- Buscar por dirección -->
           <div class="w-full">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por descripción</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por dirección</label>
                 <div class="relative">
-              <input type="text" v-model="direccion" placeholder="Ingrese la descripción..."
+              <input type="text" v-model="direccion" placeholder="Ingrese la dirección..."
                     class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
                 @keyup.enter="handleSearch">
                   <div class="absolute left-3 top-2.5">
@@ -132,7 +132,7 @@
       </div>
   
     <!-- Tabla de entidades -->
-      <div class="container mx-auto px-4 py-4">
+      <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Entidades</h2>
           <button @click="nuevaEntidad"

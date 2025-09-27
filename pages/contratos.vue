@@ -22,7 +22,7 @@
       />
     </div>
     <!-- Barra de búsqueda y filtros -->
-    <div class="container mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
+    <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
       <div class="bg-white rounded-lg shadow-md p-4">
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por entidad</label>
@@ -78,7 +78,7 @@
       </div>
     </div>
     <!-- Tabla de contratos -->
-    <div class="container mx-auto px-4 py-4">
+    <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Contratos</h2>
         <button @click="nuevoContrato"

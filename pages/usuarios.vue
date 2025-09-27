@@ -105,9 +105,23 @@
               >
                 <option value="">Todos los roles</option>
                 <option value="Administrador">Administrador</option>
-                <option value="Empleado">Empleado</option>
-                <option value="Administrador General">Administrador General</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Invitado">Invitado</option>
               </select>
+            </div>
+            <!-- Carnet de Identidad (filtro) -->
+            <div class="w-full">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Carnet de Identidad</label>
+              <input
+                type="text"
+                v-model="carnet"
+                inputmode="numeric"
+                placeholder="Solo dígitos (máx. 11)"
+                class="w-full pl-3 pr-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                maxlength="11"
+                @input="(e) => { carnet = String(e.target.value || '').replace(/\D+/g, '').slice(0,11); }"
+                @keyup.enter="handleSearch"
+              />
             </div>
           </div>
 
@@ -167,6 +181,7 @@
   const nombre = ref('');
   const nombre_usuario = ref('');
   const cargo = ref('');
+  const carnet = ref('');
   const rol = ref('');
   const showFilters = ref(false);
 
@@ -178,6 +193,7 @@
   const entidadesColumns = [
     { key: 'id_usuario', label: 'ID' },
     { key: 'nombre', label: 'Nombre de la Persona' },
+    { key: 'carnet_identidad', label: 'Carnet Identidad' },
     { key: 'nombre_usuario', label: 'Nombre de Usuario' },
     { key: 'cargo', label: 'Cargo' },
     { key: 'rol', label: 'Rol' },
@@ -222,7 +238,7 @@
   const itemsData = ref([]);
   
   // Función para cargar datos de la API
-  const fetchItems = async (page = 1, limit = 20, nombre = '', nombre_usuario = '',cargo = '', rol = '') => {
+  const fetchItems = async (page = 1, limit = 20, nombre = '', nombre_usuario = '',cargo = '', rol = '', carnetFilter = '') => {
     try {
       isLoading.value = true;
 
@@ -235,6 +251,7 @@
         nombre_usuario,
         cargo,
         rol,
+        carnet_identidad: carnetFilter
       };
 
       const response = await fetch(`${config.public.backendHost}/Usuario/filterUsers`, {
@@ -290,7 +307,7 @@
   
   // Cargar datos cuando el componente se monte
   onMounted(() => {
-    fetchItems(1, itemsPorPage.value);
+    fetchItems(1, itemsPorPage.value, '', '', '', '', carnet.value);
   });
   
   const entidadesActions = [
@@ -346,7 +363,7 @@
   const handleSearch = async () => {
     try {
       isLoading.value = true
-      await fetchItems(1, itemsPorPage.value, nombre.value, nombre_usuario.value, cargo.value, rol.value)
+      await fetchItems(1, itemsPorPage.value, nombre.value, nombre_usuario.value, cargo.value, rol.value, carnet.value)
     } catch (error) {
       console.error('Error al buscar usuarios:', error)
     } finally {
@@ -442,8 +459,8 @@
           type: 'success'
         };
       }
-      // Recargar los datos después de crear/editar
-      await fetchItems(currentPage.value, itemsPorPage.value);
+  // Recargar los datos después de crear/editar
+  await fetchItems(currentPage.value, itemsPorPage.value, nombre.value, nombre_usuario.value, cargo.value, rol.value, carnet.value);
     } else {
       console.error('Error al guardar Usuario');
     }
@@ -493,8 +510,8 @@
         // Aquí podrías mostrar un error con MessageBanner si lo deseas
         return;
       }
-      // Recargar los usuarios después de eliminar
-      await fetchItems(currentPage.value, itemsPorPage.value, nombre.value, nombre_usuario.value, cargo.value, rol.value);
+  // Recargar los usuarios después de eliminar
+  await fetchItems(currentPage.value, itemsPorPage.value, nombre.value, nombre_usuario.value, cargo.value, rol.value, carnet.value);
     } catch (error) {
       // Aquí podrías mostrar un error con MessageBanner si lo deseas
     } finally {
@@ -507,6 +524,7 @@
       'ID': item.id_usuario,
       'Nombre': item.nombre,
       'Usuario': item.nombre_usuario,
+      'Carnet Identidad': item.carnet_identidad || '',
       'Rol': item.rol
     }));
     const worksheet = XLSX.utils.json_to_sheet(exportData);

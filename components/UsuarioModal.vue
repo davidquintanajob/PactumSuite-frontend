@@ -81,9 +81,28 @@
             >
               <option value="">Seleccione un rol</option>
               <option value="Administrador">Administrador</option>
-              <option value="Empleado">Empleado</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Invitado">Invitado</option>
             </select>
           </div>
+
+            <!-- Carnet de Identidad -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Carnet de Identidad</label>
+              <input
+                v-model="formData.carnet_identidad"
+                type="text"
+                inputmode="numeric"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                :readonly="props.isViewing"
+                :disabled="props.isViewing || isLoading"
+                placeholder="Ingrese el carnet (11 dígitos)"
+                maxlength="11"
+                pattern="\d{11}"
+                @input="(e) => { formData.carnet_identidad = String(e.target.value || '').replace(/\D+/g, '').slice(0,11); }"
+              />
+            </div>
 
           <!-- Contraseña (solo en crear o editar) -->
           <div v-if="!props.isViewing">
@@ -94,9 +113,9 @@
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               :readonly="props.isViewing"
               :disabled="props.isViewing || isLoading"
-              placeholder="Ingrese la contraseña"
+              :placeholder="props.isEditing ? 'Dejar vacío para mantener la contraseña actual' : 'Ingrese la contraseña'"
               autocomplete="new-password"
-              required
+              :required="!props.isEditing"
             />
           </div>
           <div v-else>
@@ -106,6 +125,22 @@
               class="flex items-center px-3 py-2 rounded-lg border"
               :class="formData.activo ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700'"
               disabled
+            >
+              <svg v-if="formData.activo" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              {{ formData.activo ? 'Activo' : 'Inactivo' }}
+            </button>
+          </div>
+
+          <!-- Estado Activo/Inactivo (solo en modo editar) -->
+          <div v-if="props.isEditing && !props.isViewing">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <button
+              type="button"
+              @click="toggleActivo"
+              class="flex items-center px-3 py-2 rounded-lg border transition-colors duration-200 hover:opacity-80"
+              :class="formData.activo ? 'bg-green-100 border-green-400 text-green-700 hover:bg-green-200' : 'bg-red-100 border-red-400 text-red-700 hover:bg-red-200'"
+              :disabled="isLoading"
             >
               <svg v-if="formData.activo" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
               <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -189,6 +224,7 @@ watch(() => props.usuario, (newUsuario) => {
   if (newUsuario && Object.keys(newUsuario).length > 0) {
     formData.value = { ...newUsuario };
     formData.value.contrasenna = '';
+    if (typeof formData.value.carnet_identidad === 'undefined') formData.value.carnet_identidad = '';
     if (typeof formData.value.activo === 'undefined') formData.value.activo = true;
   } else {
     formData.value = {
@@ -196,16 +232,30 @@ watch(() => props.usuario, (newUsuario) => {
       nombre_usuario: '',
       cargo: '',
       rol: '',
+      carnet_identidad: '',
       contrasenna: '',
       activo: true
     };
   }
 }, { immediate: true });
 
+const toggleActivo = () => {
+  formData.value.activo = !formData.value.activo;
+};
+
 const handleSubmit = async () => {
   errorMsg.value = '';
-  if (!formData.value.nombre || !formData.value.nombre_usuario || !formData.value.cargo || !formData.value.rol || (!props.isViewing && !formData.value.contrasenna)) {
+  // Validaciones básicas
+  const isPasswordRequired = !props.isViewing && !props.isEditing;
+  if (!formData.value.nombre || !formData.value.nombre_usuario || !formData.value.cargo || !formData.value.rol || (isPasswordRequired && !formData.value.contrasenna) || !formData.value.carnet_identidad) {
     errorMsg.value = 'Todos los campos son obligatorios.';
+    return;
+  }
+
+  // Carnet: exactamente 11 dígitos numéricos
+  const ci = String(formData.value.carnet_identidad || '').trim();
+  if (!/^\d{11}$/.test(ci)) {
+    errorMsg.value = 'El carnet de identidad debe contener exactamente 11 dígitos numéricos.';
     return;
   }
   

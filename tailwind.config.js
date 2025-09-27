@@ -15,6 +15,7 @@ module.exports = {
         "secondary": "#C5B6DA",     // Lila claro (logo)
         "accent": "#7E6FB2",        // Violeta intermedio (botones)
         "neutral": "#FFFFFF",       // Blanco (limpieza visual)
+        "info": "#3B82F6",          // Azul informativo (notificaciones)
         "dark": "#2E225F",          // Violeta profundo (contraste)
         "success": "#10B981",       // Verde (acciones exitosas)
         "danger": "#EF4444"         // Rojo (alertas/errores)

@@ -35,14 +35,32 @@
           <tr v-else v-for="(item, index) in paginatedItems" :key="index" class="hover:bg-gray-50" tabindex="0"
             @click="() => $emit('row-click', item)" @keydown.enter="() => $emit('row-click', item)">
             <td 
-              v-for="column in columns" 
+              v-for="(column, colIndex) in columns" 
               :key="column.key"
               class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
             >
-              <!-- Renderizado personalizado de celda -->
-              <div v-if="column.cellRenderer" v-html="column.cellRenderer(getNestedValue(item, column.key), item)"></div>
-              <!-- Renderizado normal de texto -->
-              <span v-else>{{ column.format ? column.format(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}</span>
+              <!-- For the first column, render a relative container so we can overlay the note icon without changing layout -->
+              <div v-if="colIndex === 0" class="relative pr-6">
+                <!-- Overlay note icon when item.nota is present; positioned to the right of cell content -->
+                <div v-if="getNestedValue(item, 'nota')" class="absolute right-0 top-1/2 transform -translate-y-1/2 z-50 pointer-events-none" :title="getNestedValue(item, 'nota')">
+                  <div class="bg-info text-neutral p-1 rounded-full shadow-lg flex items-center justify-center w-6 h-6" role="img" aria-label="Nota disponible">
+                    <!-- simple note icon (paper) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 7h10l2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Renderizado personalizado de celda dentro del contenedor relativo -->
+                <div v-if="column.cellRenderer" v-html="column.cellRenderer(getNestedValue(item, column.key), item)"></div>
+                <!-- Renderizado normal de texto -->
+                <span v-else>{{ column.format ? column.format(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}</span>
+              </div>
+              <!-- Other columns: default render -->
+              <div v-else>
+                <div v-if="column.cellRenderer" v-html="column.cellRenderer(getNestedValue(item, column.key), item)"></div>
+                <span v-else>{{ column.format ? column.format(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}</span>
+              </div>
             </td>
             <td v-if="actions" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <div class="flex justify-end space-x-2">

@@ -39,7 +39,7 @@
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
           <div class="w-full">
             <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de contrato</label>
             <SelectSearch
@@ -63,6 +63,16 @@
             <input type="number" v-model.number="num_consecutivo" placeholder="Número consecutivo"
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch">
+          </div>
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cliente o Proveedor</label>
+            <SelectSearch
+              v-model="clienteOProveedor"
+              :options="clienteOProveedorOptions"
+              labelKey="label"
+              valueKey="value"
+              placeholder="Seleccionar..."
+            />
           </div>
         </div>
         <div class="flex justify-end mt-4 gap-2">
@@ -123,7 +133,14 @@ const id_tipo_contrato = ref('');
 const fecha_inicio = ref('');
 const fecha_fin = ref('');
 const num_consecutivo = ref('');
+const clienteOProveedor = ref('');
 const showFilters = ref(false);
+
+const clienteOProveedorOptions = ref([
+  { label: 'Todos', value: '' },
+  { label: 'Cliente', value: 'Cliente' },
+  { label: 'Proveedor', value: 'Proveedor' }
+]);
 
 const tipoContratos = ref([]);
 const entidades = ref([]);
@@ -160,7 +177,16 @@ const contratosColumns = [
       return `<span class="px-2 py-1 rounded text-sm font-medium ${bgColor}">${fechaFormateada}</span>`;
     }
   },
-  { key: 'clasificacion', label: 'Clasificación' },
+  { key: 'clasificacion', label: 'Clasificación', class: 'w-1/2 whitespace-normal break-words' },
+  {
+    key: 'ClienteOProveedor',
+    label: 'Cliente o Proveedor',
+    cellRenderer: (value) => {
+      if (!value) return '';
+      const bgColor = value === 'Cliente' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800';
+      return `<span class="px-2 py-1 rounded text-sm font-medium ${bgColor}">${value}</span>`;
+    }
+  },
   { key: 'entidad.nombre', label: 'Entidad' },
   { key: 'tipoContrato.nombre', label: 'Tipo de Contrato' }
 ];
@@ -242,7 +268,8 @@ async function fetchContratos(page = 1) {
       id_tipo_contrato: id_tipo_contrato.value || undefined,
       fecha_inicio: fecha_inicio.value || undefined,
       fecha_fin: fecha_fin.value || undefined,
-      num_consecutivo: num_consecutivo.value || undefined
+      num_consecutivo: num_consecutivo.value || undefined,
+      ClienteOProveedor: clienteOProveedor.value || undefined
     };
     const res = await fetch(`${config.public.backendHost}/contrato/filter/${page}/${itemsPorPage.value}`, {
       method: 'POST',
@@ -557,6 +584,7 @@ function exportToExcel() {
     'Fecha Inicio': item.fecha_inicio,
     'Fecha Fin': item.fecha_fin,
     'Clasificación': item.clasificacion,
+    'Cliente o Proveedor': item.clienteOProveedor,
     'Entidad': item.entidad?.nombre,
     'Tipo de Contrato': item.tipoContrato?.nombre
   }));

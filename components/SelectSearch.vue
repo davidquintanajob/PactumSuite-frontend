@@ -1,12 +1,13 @@
 <template>
   <div class="relative w-full">
     <input
+      ref="inputRef"
       type="text"
       v-model="search"
       :placeholder="placeholder"
       class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
       :disabled="disabled"
-      @focus="!disabled && (open = true)"
+      @focus="handleFocus"
       @input="!disabled && (open = true)"
       @keydown.down.prevent="!disabled && move(1)"
       @keydown.up.prevent="!disabled && move(-1)"
@@ -53,6 +54,7 @@ const search = ref('');
 const open = ref(false);
 const activeIndex = ref(-1);
 const dropdownId = `dropdown-${Math.random().toString(36).substr(2, 9)}`;
+const inputRef = ref(null);
 
 // Función para obtener el label de una opción
 function getLabel(option) {
@@ -118,5 +120,10 @@ const selectActive = () => {
 };
 const onBlur = () => {
   setTimeout(() => { open.value = false; }, 100);
+};
+
+const handleFocus = () => {
+  if (!props.disabled) open.value = true;
+  if (search.value) inputRef.value.select();
 };
 </script> 

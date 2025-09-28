@@ -5,10 +5,10 @@
         <!-- Encabezado de la tabla -->
         <thead class="bg-gray-50">
           <tr>
-            <th 
-              v-for="column in columns" 
+            <th
+              v-for="column in columns"
               :key="column.key"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              :class="['px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider', column.class]"
             >
               {{ column.label }}
             </th>
@@ -39,7 +39,7 @@
               :key="column.key"
               :class="[
                 'px-6 py-4 text-sm text-gray-900',
-                colIndex === 0 ? 'whitespace-normal max-w-xs break-words' : 'whitespace-nowrap'
+                column.class || (colIndex === 0 ? 'whitespace-normal max-w-xs break-words' : 'whitespace-nowrap')
               ]"
             >
               <!-- For the first column, render a relative container so we can overlay the note icon without changing layout -->

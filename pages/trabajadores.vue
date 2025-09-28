@@ -19,8 +19,8 @@
     <!-- Barra de búsqueda y filtros -->
     <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
       <div class="bg-white rounded-lg shadow-md p-4">
-        <div class="flex flex-col md:flex-row gap-2 items-center mb-4 md:mb-2">
-          <div class="w-full md:w-1/4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4 md:mb-2">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por nombre</label>
             <div class="relative">
               <input
@@ -37,7 +37,7 @@
               </div>
             </div>
           </div>
-          <div class="w-full md:w-1/4">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por cargo</label>
             <input
               type="text"
@@ -47,7 +47,7 @@
               @keyup.enter="handleSearch"
             />
           </div>
-          <div class="w-full md:w-1/4">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Carnet de Identidad</label>
             <input
               type="text"
@@ -59,7 +59,7 @@
               @keyup.enter="handleSearch"
             />
           </div>
-          <div class="w-full md:w-1/4">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Entidad</label>
             <SelectSearch
               v-model="searchEntidad"
@@ -67,6 +67,16 @@
               labelKey="nombre"
               valueKey="id_entidad"
               placeholder="Buscar entidad..."
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Función</label>
+            <SelectSearch
+              v-model="searchFuncion"
+              :options="funcionOptions"
+              labelKey="label"
+              valueKey="value"
+              placeholder="Seleccionar función..."
             />
           </div>
         </div>
@@ -133,6 +143,13 @@ const searchNombre = ref('');
 const searchCargo = ref('');
 const searchCarnet = ref('');
 const searchEntidad = ref('');
+const searchFuncion = ref('');
+const funcionOptions = ref([
+  { label: 'Todos', value: '' },
+  { label: 'Concidia', value: 'Concidia' },
+  { label: 'Firma', value: 'Firma' },
+  { label: 'Concidia y Firma', value: 'Concidia y Firma' }
+]);
 const trabajadoresData = ref([]);
 const totalTrabajadores = ref(0);
 const itemsPorPage = ref(10);
@@ -149,11 +166,10 @@ const showConfirmBanner = ref(false);
 const trabajadorAEliminar = ref(null);
 
 const trabajadoresColumns = [
-  { key: 'id_trabajador_autorizado', label: 'ID' },
   { key: 'nombre', label: 'Nombre' },
   { key: 'cargo', label: 'Cargo' },
   { key: 'carnet_identidad', label: 'Carnet' },
-  { key: 'entidad.nombre', label: 'Entidad' },
+  { key: 'funcion', label: 'Función' },
   { key: 'contratosAsociados', label: 'Contratos Asociados' }
 ];
 const deleteIcon = {
@@ -245,7 +261,8 @@ const fetchTrabajadores = async (page = currentPage.value, limit = itemsPorPage.
       nombre: searchNombre.value,
       cargo: searchCargo.value,
       carnet_identidad: searchCarnet.value,
-      id_entidad: searchEntidad.value
+      id_entidad: searchEntidad.value,
+      funcion: searchFuncion.value
     };
     const res = await fetch(`${config.public.backendHost}/trabajadorAutorizado/filter/${page}/${limit}`, {
       method: 'POST',
@@ -479,6 +496,7 @@ function exportToExcel() {
     'Cargo': item.cargo,
     'Carnet de Identidad': item.carnet_identidad,
     'Teléfono': item.num_telefono,
+    'Función': item.funcion,
     'Contratos Asociados': item.contratosAsociados
   }));
   const worksheet = XLSX.utils.json_to_sheet(exportData);

@@ -78,6 +78,25 @@
             <input v-model="formData.clasificacion" type="text" :readonly="isViewing" :disabled="isViewing || isLoading"
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
+          <!-- Cliente o Proveedor -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cliente o Proveedor</label>
+            <SelectSearch
+              v-model="formData.ClienteOProveedor"
+              :options="clienteOProveedorOptions"
+              labelKey="label"
+              valueKey="value"
+              :disabled="isViewing || isLoading"
+              placeholder="Selecciona..."
+            />
+          </div>
+          <!-- Vigencia de pago/cobro facturas -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Vigencia de pago/cobro facturas (días)</label>
+            <input v-model.number="formData.vigenciaFacturasDias" type="number" :readonly="isViewing" :disabled="isViewing || isLoading"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="0" required />
+          </div>
           <!-- Nota -->
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
@@ -183,8 +202,15 @@ const formData = ref({
   fecha_fin: '',
   num_consecutivo: '',
   clasificacion: '',
+  ClienteOProveedor: '',
+  vigenciaFacturasDias: 30,
   nota: ''
 });
+
+const clienteOProveedorOptions = ref([
+  { label: 'Cliente', value: 'Cliente' },
+  { label: 'Proveedor', value: 'Proveedor' }
+]);
 
 const errorMsg = ref('');
 const isLoading = ref(false);
@@ -255,6 +281,8 @@ watch(() => props.contrato, (contrato) => {
       fecha_fin: contrato.fecha_fin ? contrato.fecha_fin.substring(0, 10) : '',
       num_consecutivo: contrato.num_consecutivo || '',
       clasificacion: contrato.clasificacion || '',
+      ClienteOProveedor: contrato.ClienteOProveedor || '',
+      vigenciaFacturasDias: contrato.vigenciaFacturasDias || 30,
       nota: contrato.nota || ''
     };
   } else {
@@ -265,6 +293,8 @@ watch(() => props.contrato, (contrato) => {
       fecha_fin: '',
       num_consecutivo: '',
       clasificacion: '',
+      ClienteOProveedor: '',
+      vigenciaFacturasDias: 30,
       nota: ''
     };
   }
@@ -272,8 +302,32 @@ watch(() => props.contrato, (contrato) => {
 
 const handleSubmit = async () => {
   errorMsg.value = '';
-  if (!formData.value.id_entidad || !formData.value.id_tipo_contrato || !formData.value.fecha_inicio || !formData.value.fecha_fin || !formData.value.num_consecutivo) {
-    errorMsg.value = 'Todos los campos obligatorios deben estar completos.';
+  if (!formData.value.id_entidad) {
+    errorMsg.value = 'Debe seleccionar una Entidad.';
+    return;
+  }
+  if (!formData.value.id_tipo_contrato) {
+    errorMsg.value = 'Debe seleccionar un Tipo de Contrato.';
+    return;
+  }
+  if (!formData.value.fecha_inicio) {
+    errorMsg.value = 'Debe ingresar la Fecha de Inicio.';
+    return;
+  }
+  if (!formData.value.fecha_fin) {
+    errorMsg.value = 'Debe ingresar la Fecha de Fin.';
+    return;
+  }
+  if (!formData.value.num_consecutivo) {
+    errorMsg.value = 'Debe ingresar el Número Consecutivo.';
+    return;
+  }
+  if (!formData.value.ClienteOProveedor) {
+    errorMsg.value = 'Debe seleccionar si este contrato es como Cliente o Proveedor.';
+    return;
+  }
+  if (!formData.value.vigenciaFacturasDias || formData.value.vigenciaFacturasDias < 0) {
+    errorMsg.value = 'El campo "Vigencia de pago/cobro facturas (días)" es obligatorio y debe ser un número mayor o igual a 0.';
     return;
   }
   

@@ -2,15 +2,15 @@
   <div v-if="modelValue" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <!-- MessageBanner para mostrar estado de carga -->
     <div v-if="loadingBanner" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4 pointer-events-none">
-      <MessageBanner 
-        :title="loadingBanner.title" 
-        :description="loadingBanner.description" 
+      <MessageBanner
+        :title="loadingBanner.title"
+        :description="loadingBanner.description"
         :type="loadingBanner.type"
-        @close="loadingBanner = null" 
-        class="pointer-events-auto" 
+        @close="loadingBanner = null"
+        class="pointer-events-auto"
       />
     </div>
-    
+
     <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
       <!-- Encabezado -->
       <div class="flex justify-between items-center mb-6">
@@ -59,6 +59,20 @@
               @input="onTelefonoInput" />
           </div>
         </div>
+        <!-- Función -->
+        <div class="mt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Función</label>
+          <SelectSearch
+            v-model="formData.firma"
+            :options="funcionOptions"
+            labelKey="label"
+            valueKey="value"
+            placeholder="Seleccionar función..."
+            :readonly="isViewing"
+            :disabled="isViewing || isLoading"
+            required
+          />
+        </div>
         <!-- Botones de acción -->
         <div class="flex justify-end space-x-4 mt-6" v-if="!isViewing">
           <button type="button" @click="$emit('update:modelValue', false)"
@@ -82,7 +96,7 @@
           </button>
         </div>
       </form>
-      
+
       <!-- Tabla de Contratos -->
       <div v-if="isViewing || isEditing" class="mt-8">
         <h3 class="text-lg font-semibold mb-2">Contratos Asociados</h3>
@@ -97,7 +111,7 @@
           @page-change="handleContratosPageChange"
         />
       </div>
-      
+
       <div v-if="errorMsg" class="text-red-600 text-sm mt-2">{{ errorMsg }}</div>
     </div>
   </div>
@@ -107,6 +121,7 @@
 import { ref, watch, computed } from 'vue';
 import DataTable from './DataTable.vue';
 import MessageBanner from './MessageBanner.vue';
+import SelectSearch from './SelectSearch.vue';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -119,8 +134,14 @@ const formData = ref({
   nombre: '',
   cargo: '',
   carnet_identidad: '',
-  num_telefono: ''
+  num_telefono: '',
+  firma: ''
 });
+const funcionOptions = ref([
+  { label: 'Concidia', value: 'Concidia' },
+  { label: 'Firma', value: 'Firma' },
+  { label: 'Concidia y Firma', value: 'Concidia y Firma' }
+]);
 const errorMsg = ref('');
 const isLoading = ref(false);
 const loadingBanner = ref(null);
@@ -131,25 +152,27 @@ watch(() => props.trabajador, (trabajador) => {
       nombre: trabajador.nombre || '',
       cargo: trabajador.cargo || '',
       carnet_identidad: trabajador.carnet_identidad || '',
-      num_telefono: trabajador.num_telefono || ''
+      num_telefono: trabajador.num_telefono || '',
+      firma: trabajador.funcion || ''
     };
   } else {
     formData.value = {
       nombre: '',
       cargo: '',
       carnet_identidad: '',
-      num_telefono: ''
+      num_telefono: '',
+      firma: ''
     };
   }
 }, { immediate: true });
 
 const handleSubmit = async () => {
   errorMsg.value = '';
-  if (!formData.value.nombre || !formData.value.carnet_identidad) {
+  if (!formData.value.nombre || !formData.value.carnet_identidad || !formData.value.firma) {
     errorMsg.value = 'Todos los campos son obligatorios.';
     return;
   }
-  
+
   // Activar estado de carga
   isLoading.value = true;
   loadingBanner.value = {
@@ -157,11 +180,17 @@ const handleSubmit = async () => {
     description: 'Comunicando con el servidor, espere por favor...',
     type: 'warning'
   };
-  
+
   try {
-    // Emitir el evento submit y esperar la respuesta
+    // Emitir el evento submit con funcion mapeado
     await new Promise((resolve, reject) => {
-      emit('submit', { ...formData.value });
+      emit('submit', {
+        nombre: formData.value.nombre,
+        cargo: formData.value.cargo,
+        carnet_identidad: formData.value.carnet_identidad,
+        num_telefono: formData.value.num_telefono,
+        funcion: formData.value.firma
+      });
       // Simular un pequeño delay para que el usuario vea el mensaje
       setTimeout(resolve, 100);
     });
@@ -217,4 +246,4 @@ const contratosPerPage = 5;
 const handleContratosPageChange = (newPage) => {
   contratosPage.value = newPage;
 };
-</script> 
+</script>

@@ -152,9 +152,9 @@ const options = [
     { label: "Entidades", src: "/edificios.png", link: "/entidades" },
     { label: "Contratos", src: "/contrato.png", link: "/contratos" },
     { label: "Trabajadores", src: "/lanza-libre.png", link: "/trabajadores" },
-    { label: "Productos", src: "/contrato.png", link: "/productos" },
-    { label: "Facturas", src: "/contrato.png", link: "/facturas" },
-    { label: "Servicios", src: "/contrato.png", link: "/servicios" },
+    { label: "Productos", src: "/Productos.png", link: "/productos" },
+    { label: "Facturas", src: "/Facturas.png", link: "/facturas" },
+    { label: "Servicios", src: "/Servicios.png", link: "/servicios" },
     { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos" },
     { label: "Ofertas", src: "/oferta-de-trabajo.png", link: "/ofertas" },
     { label: "Usuario", src: "/usuarios.png", link: "/usuarios" }
@@ -179,7 +179,6 @@ function goHome() {
 
 function handleLogout() {
     localStorage.clear();
-    console.log("Cerrando seción");
     if (window.location.pathname === '/') {
         window.location.reload();
     } else {

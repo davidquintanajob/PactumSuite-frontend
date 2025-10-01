@@ -59,7 +59,7 @@ a <template>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <!-- Usuario -->
-          <div>
+          <div v-if="isViewing || isEditing">
             <label class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
             <SelectSearchAPI
               v-model="formData.id_usuario"
@@ -69,9 +69,10 @@ a <template>
               label-key="nombre_usuario"
               value-key="id_usuario"
               placeholder="Buscar usuario por nombre..."
-              :disabled="isViewing || isLoading"
+              :disabled="true"
               :initial-label="initialUsuarioLabel"
               :direct-data="true"
+              :class="{ 'opacity-50': isViewing || isEditing }"
             />
           </div>
           <!-- Trabajador Autorizado -->
@@ -330,6 +331,8 @@ async function fetchNextConsecutivo() {
       const data = await res.json();
       if (data.data && data.data.nextConsecutivo) {
         formData.value.num_consecutivo = data.data.nextConsecutivo;
+        // Guardar el número consecutivo en localStorage para uso futuro
+        localStorage.setItem('num_consecutivo_guardado', data.data.nextConsecutivo);
       }
     } else {
       console.error('Error al obtener el siguiente consecutivo');
@@ -339,11 +342,16 @@ async function fetchNextConsecutivo() {
   }
 }
 
-// Watcher para detectar cuando se abre el modal en modo "nueva factura"
+// Watcher para detectar cuando se abre el modal
 watch(() => props.modelValue, async (newValue) => {
-  if (newValue && !props.isEditing && !props.isViewing) {
-    // Es una nueva factura, obtener el siguiente consecutivo
-    await fetchNextConsecutivo();
+  if (newValue) {
+    if (!props.isEditing && !props.isViewing) {
+      // Es una nueva factura, obtener el siguiente consecutivo
+      await fetchNextConsecutivo();
+    } else if (props.isViewing) {
+      // Es modo ver, obtener y guardar el siguiente consecutivo en localStorage
+      await fetchNextConsecutivo();
+    }
   }
 });
 
@@ -373,6 +381,17 @@ watch(() => props.factura, async (factura) => {
         await cargarTrabajadorPorId(factura.id_trabajador_autorizado);
       }
     }
+    // Si está en modo crear o editar, verificar si el contrato es Cliente y cargar consecutivo guardado
+    if (!props.isViewing) {
+      const contratoSeleccionado = contratosFiltrados.value.find(c => c.id_contrato === formData.value.id_contrato);
+      if (contratoSeleccionado && contratoSeleccionado.ClienteOProveedor === 'Cliente') {
+        const consecutivoGuardado = localStorage.getItem('num_consecutivo_guardado');
+        if (consecutivoGuardado) {
+          formData.value.num_consecutivo = consecutivoGuardado;
+          console.log('Carga inicial (crear/editar): Número consecutivo establecido a:', consecutivoGuardado);
+        }
+      }
+    }
   } else {
     formData.value = {
       id_entidad: '',
@@ -392,8 +411,37 @@ watch(() => props.factura, async (factura) => {
   }
 }, { immediate: true });
 
+// Watcher para cuando se selecciona un contrato en modo crear/editar
+watch(() => formData.value.id_contrato, (newIdContrato) => {
+  if (!props.isViewing && newIdContrato) {
+    const contratoSeleccionado = contratosFiltrados.value.find(c => c.id_contrato === newIdContrato);
+    if (contratoSeleccionado && contratoSeleccionado.ClienteOProveedor === 'Cliente') {
+      const consecutivoGuardado = localStorage.getItem('num_consecutivo_guardado');
+      if (consecutivoGuardado) {
+        formData.value.num_consecutivo = consecutivoGuardado;
+        console.log('Selección de contrato (crear/editar): Número consecutivo establecido a:', consecutivoGuardado);
+      }
+    }
+  }
+});
+
 const handleSubmit = async () => {
   errorMsg.value = '';
+
+  // Si es una nueva factura, obtener el id_usuario del localStorage
+  if (!props.isEditing && !props.isViewing) {
+    const usuarioData = localStorage.getItem('usuario');
+    if (usuarioData) {
+      try {
+        const usuario = JSON.parse(usuarioData);
+        if (usuario && usuario.id_usuario) {
+          formData.value.id_usuario = usuario.id_usuario;
+        }
+      } catch (error) {
+        console.error('Error al parsear datos de usuario del localStorage:', error);
+      }
+    }
+  }
 
   if (!formData.value.id_contrato) {
     errorMsg.value = 'Debe seleccionar un Contrato.';
@@ -471,6 +519,8 @@ const initialTrabajadorLabel = computed(() => {
 
 const handleEntidadSeleccionada = async (entidad) => {
   if (entidad && entidad.id_entidad) {
+    // Limpiar la selección de contrato cuando se selecciona una nueva entidad
+    formData.value.id_contrato = '';
     await cargarContratosPorEntidad(entidad.id_entidad);
   } else {
     contratosFiltrados.value = [];

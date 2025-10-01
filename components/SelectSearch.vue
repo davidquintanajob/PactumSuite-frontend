@@ -9,9 +9,7 @@
       :disabled="disabled"
       @focus="handleFocus"
       @input="!disabled && (open = true)"
-      @keydown.down.prevent="!disabled && move(1)"
-      @keydown.up.prevent="!disabled && move(-1)"
-      @keydown.enter.prevent="!disabled && selectActive"
+      @keydown="handleKeydown"
       @blur="onBlur"
       :aria-expanded="open.toString()"
       :aria-controls="dropdownId"
@@ -126,4 +124,27 @@ const handleFocus = () => {
   if (!props.disabled) open.value = true;
   if (search.value) inputRef.value.select();
 };
-</script> 
+
+const handleKeydown = (event) => {
+  if (props.disabled) return;
+
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault();
+      move(1);
+      break;
+    case 'ArrowUp':
+      event.preventDefault();
+      move(-1);
+      break;
+    case 'Enter':
+      event.preventDefault();
+      selectActive();
+      break;
+    case 'Escape':
+      open.value = false;
+      activeIndex.value = -1;
+      break;
+  }
+};
+</script>

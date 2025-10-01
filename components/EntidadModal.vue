@@ -367,11 +367,42 @@ const handleSubmit = async () => {
 
 // Columnas para la tabla de contratos
 const contratosColumns = [
-  { key: 'num_consecutivo', label: 'N° Consecutivo' },
-  { key: 'fecha_inicio', label: 'Fecha de Inicio' },
-  { key: 'fecha_fin', label: 'Fecha de Fin' },
-  { key: 'tipo_contrato', label: 'Tipo de Contrato' },
-  { key: 'num_trabajadores', label: 'Trabajadores Autorizados' }
+  { key: 'num_consecutivo', label: 'Num. Consecutivo' },
+  {
+    key: 'fecha_inicio',
+    label: 'Fecha Inicio',
+    cellRenderer: (value) => {
+      if (!value) return '';
+      const fechaFormateada = value.substring(0, 10);
+      return `<span class="px-2 py-1 rounded text-sm">${fechaFormateada}</span>`;
+    }
+  },
+  {
+    key: 'fecha_fin',
+    label: 'Fecha Fin',
+    cellRenderer: (value) => {
+      if (!value) return '';
+      const fechaFormateada = value.substring(0, 10);
+      const fechaActual = new Date();
+      const fechaFin = new Date(value);
+
+      // Si la fecha actual es mayor que la fecha fin, fondo rojo (vencido)
+      // Si no, fondo verde (vigente)
+      const bgColor = fechaActual > fechaFin ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+
+      return `<span class="px-2 py-1 rounded text-sm font-medium ${bgColor}">${fechaFormateada}</span>`;
+    }
+  },
+  {
+    key: 'ClienteOProveedor',
+    label: 'Cliente o Proveedor',
+    cellRenderer: (value) => {
+      if (!value) return '';
+      const bgColor = value === 'Cliente' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800';
+      return `<span class="px-2 py-1 rounded text-sm font-medium ${bgColor}">${value}</span>`;
+    }
+  },
+  { key: 'tipoContratoNombre', label: 'Tipo de Contrato' }
 ];
 
 // Computed para los contratos de la entidad
@@ -381,14 +412,16 @@ const contratosData = computed(() => {
     num_consecutivo: c.num_consecutivo,
     fecha_inicio: c.fecha_inicio ? c.fecha_inicio.split('T')[0] : '',
     fecha_fin: c.fecha_fin ? c.fecha_fin.split('T')[0] : '',
-    tipo_contrato: c.tipoContrato?.nombre || '',
-    num_trabajadores: Array.isArray(c.trabajadoresAutorizados) ? c.trabajadoresAutorizados.length : 0
+    clasificacion: c.clasificacion || '',
+    ClienteOProveedor: c.ClienteOProveedor || '',
+    entidadNombre: props.entidad.nombre || '',
+    tipoContratoNombre: c.tipoContrato?.nombre || ''
   }));
 });
 
 const contratosTotal = computed(() => contratosData.value.length);
 const contratosPage = ref(1);
-const contratosPerPage = 5;
+const contratosPerPage = 10;
 
 const handleContratosPageChange = (newPage) => {
   contratosPage.value = newPage;

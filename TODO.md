@@ -1,6 +1,14 @@
-# TODO: Crear vista de Servicios
+# Modificar Campo Número Consecutivo en ContratoModal.vue
 
-- [x] Crear el archivo pages/servicios.vue con la estructura adaptada de productos.vue
-  - [x] Template: barra de búsqueda con campo descripción, botón buscar y exportar, tabla sin acciones ni botón crear
-  - [x] Script: variables, fetchServicios, handleSearch, exportToExcel
-  - [x] Columnas: descripcion, importe, cantidad, importe_total, unidadMedida, factura.num_consecutivo
+## Tareas Pendientes
+
+- [x] Cambiar el tipo del input de "number" a "text" y agregar @input handler
+- [x] Implementar la función handleConsecutivoInput para validar y auto-agregar "/"
+- [x] Probar el comportamiento del input en el modal
+- [x] Verificar que no haya cambios disruptivos en la funcionalidad existente
+
+## Detalles de Implementación
+
+- Campo: Número Consecutivo en ContratoModal.vue
+- Cambios: Tipo a text, agregar validación personalizada
+- Lógica: Solo números si no hay "/", números a la izquierda de "/" si lo hay, auto-agregar "/" al primer carácter no numérico

@@ -68,9 +68,18 @@
           <!-- Número Consecutivo -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Número Consecutivo</label>
-            <input v-model="formData.num_consecutivo" type="number" :readonly="isViewing" :disabled="isViewing || isLoading"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required />
+            <input
+              v-model="formData.num_consecutivo"
+              type="text"
+              :readonly="isViewing || !canEditConsecutivo"
+              :disabled="isViewing || isLoading"
+              @input="handleConsecutivoInput"
+              :class="[
+                'w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500',
+                { 'opacity-50': !canEditConsecutivo }
+              ]"
+              required
+            />
           </div>
           <!-- Clasificación -->
           <div>
@@ -322,6 +331,24 @@ const handleSubmit = async () => {
     errorMsg.value = 'Debe ingresar el Número Consecutivo.';
     return;
   }
+  // Validate num_consecutivo format according to new rules
+  const val = formData.value.num_consecutivo;
+  const slashIndex = val.indexOf('/');
+  if (slashIndex === -1) {
+    // No slash, must be only numbers
+    if (!/^\d+$/.test(val)) {
+      errorMsg.value = 'El Número Consecutivo debe contener solo números si no tiene "/".';
+      return;
+    }
+  } else {
+    // Slash present, left side must be numbers and not empty
+    const left = val.substring(0, slashIndex);
+    if (!left || !/^\d+$/.test(left)) {
+      errorMsg.value = 'La parte izquierda del "/" debe contener solo números y no puede estar vacía.';
+      return;
+    }
+    // Right side can be anything, no validation needed
+  }
   if (!formData.value.ClienteOProveedor) {
     errorMsg.value = 'Debe seleccionar si este contrato es como Cliente o Proveedor.';
     return;
@@ -410,4 +437,33 @@ const ofertasTotal = computed(() => ofertasData.value.length);
 const handleOfertasPageChange = (newPage) => {
   ofertasPage.value = newPage;
 };
-</script> 
+
+const canEditConsecutivo = computed(() => {
+  return formData.value.ClienteOProveedor && formData.value.ClienteOProveedor !== 'Cliente';
+});
+
+const handleConsecutivoInput = (event) => {
+  let val = event.target.value;
+  // If first non-numeric character typed and no slash yet, insert slash automatically
+  const slashIndex = val.indexOf('/');
+  if (slashIndex === -1) {
+    // Find first non-digit character
+    const firstNonDigitIndex = val.search(/\D/);
+    if (firstNonDigitIndex !== -1) {
+      // Insert slash at first non-digit character position
+      val = val.slice(0, firstNonDigitIndex) + '/' + val.slice(firstNonDigitIndex);
+    }
+  }
+  // Validate left side of slash is only numbers
+  const parts = val.split('/');
+  if (parts.length > 1) {
+    // Left side must be numbers only
+    parts[0] = parts[0].replace(/\D/g, '');
+    val = parts[0] + '/' + parts.slice(1).join('/');
+  } else {
+    // No slash, only numbers allowed
+    val = val.replace(/\D/g, '');
+  }
+  formData.value.num_consecutivo = val;
+};
+</script>

@@ -144,6 +144,36 @@
       <DataTable :columns="facturasColumns" :items="itemsData" :actions="facturasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
+      <!-- Información resumen debajo de la tabla -->
+      <div class="mt-6 bg-white rounded-lg shadow-md p-4 w-[95%] mx-auto">
+        <h3 class="text-xl font-semibold mb-4">Resumen de Información Filtrada</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div class="bg-red-100 text-red-800 rounded p-3">
+            <div class="text-sm font-medium">Suma: Servicios que los Proveedores han prestado</div>
+            <div class="text-lg font-bold">Facturado: {{ (paginationData.serviciosProveedoresFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ (paginationData.serviciosProveedores ?? 0).toFixed(2) - (paginationData.serviciosProveedoresFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">Total: {{ (paginationData.serviciosProveedores ?? 0).toFixed(2) }}</div>
+          </div>
+          <div class="bg-green-100 text-green-800 rounded p-3">
+            <div class="text-sm font-medium">Suma: Servicios prestados a Clientes</div>
+            <div class="text-lg font-bold">Facturado: {{ (paginationData.serviciosClientesFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ (paginationData.serviciosClientes ?? 0).toFixed(2) - (paginationData.serviciosClientesFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">Total: {{ (paginationData.serviciosClientes ?? 0).toFixed(2) }}</div>
+          </div>
+          <div class="bg-red-100 text-red-800 rounded p-3">
+            <div class="text-sm font-medium">Suma: Productos comprados a Proveedores</div>
+            <div class="text-lg font-bold">Facturado: {{ (paginationData.productosProveedorFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ (paginationData.productosProveedor ?? 0).toFixed(2) - (paginationData.productosProveedorFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">Total: {{ (paginationData.productosProveedor ?? 0).toFixed(2) }}</div>
+          </div>
+          <div class="bg-green-100 text-green-800 rounded p-3">
+            <div class="text-sm font-medium">Suma: Productos vendidos a Clientes</div>
+            <div class="text-lg font-bold">Facturado: {{ (paginationData.productosClientesFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ (paginationData.productosClientes ?? 0).toFixed(2) - (paginationData.productosClientesFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">Total: {{ (paginationData.productosClientes ?? 0).toFixed(2) }}</div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- Modal de Factura -->
     <FacturaModal
@@ -231,7 +261,6 @@ const facturasColumns = [
       return `<span class="px-2 py-1 rounded-full text-sm font-medium ${bgColor}">${value}</span>`;
     }
   },
-  { key: 'usuario.nombre', label: 'Creado por' },
   {
     key: 'contrato.ClienteOProveedor',
     label: 'Cliente o Proveedor',
@@ -243,7 +272,18 @@ const facturasColumns = [
   },
   { key: 'contrato.num_consecutivo', label: 'Contrato' },
   { key: 'contrato.tipoContrato.nombre', label: 'Tipo Contrato' },
-  { key: 'contrato.entidad.nombre', label: 'Entidad' }
+  { 
+    key: 'suma_general', 
+    label: 'Importe',
+    cellRenderer: (value) => {
+      if (value == null || value === '') return '';
+      const num = parseFloat(value);
+      if (isNaN(num)) return value;
+      return `<span class="px-2 py-1 rounded text-sm">${num.toFixed(2)}</span>`;
+    }
+  },
+  { key: 'contrato.entidad.nombre', label: 'Entidad' },
+  { key: 'usuario.nombre', label: 'Creado por' }
 ];
 
 // Paginación y datos
@@ -252,6 +292,7 @@ const totalItems = ref(0);
 const isLoading = ref(false);
 const itemsPorPage = ref(10);
 const itemsData = ref([]);
+const paginationData = ref({});
 
 // Banners de error y confirmación
 const errorBanner = ref(null);
@@ -372,6 +413,7 @@ async function fetchFacturas(page = 1) {
     itemsData.value = data.data || [];
     totalItems.value = data.pagination?.total || 0;
     currentPage.value = data.pagination?.currentPage || 1;
+    paginationData.value = data.pagination;
   } catch (err) {
     errorBanner.value = { title: 'Error', description: 'No se pudieron cargar las facturas', type: 'error' };
   }
@@ -558,6 +600,7 @@ function exportToExcel() {
     'Cliente o Proveedor': item.contrato?.ClienteOProveedor || '',
     'Contrato': item.contrato?.num_consecutivo || '',
     'Tipo Contrato': item.contrato?.tipoContrato?.nombre || '',
+    'Importe': item.suma_general ? parseFloat(item.suma_general).toFixed(2) : '',
     'Entidad': item.contrato?.entidad?.nombre || ''
   }));
   const worksheet = XLSX.utils.json_to_sheet(exportData);

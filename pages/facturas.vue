@@ -148,28 +148,28 @@
       <div class="mt-6 bg-white rounded-lg shadow-md p-4 w-[95%] mx-auto">
         <h3 class="text-xl font-semibold mb-4">Resumen de Información Filtrada</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div class="bg-red-100 text-red-800 rounded p-3">
+          <div class="bg-orange-100 text-orange-800 rounded p-3">
             <div class="text-sm font-medium">Suma: Servicios que los Proveedores han prestado</div>
             <div class="text-lg font-bold">Facturado: {{ (paginationData.serviciosProveedoresFacturados ?? 0).toFixed(2) }}</div>
-            <div class="text-lg font-bold">No Facturado: {{ (paginationData.serviciosProveedores ?? 0).toFixed(2) - (paginationData.serviciosProveedoresFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ ((paginationData.serviciosProveedores ?? 0).toFixed(2) - (paginationData.serviciosProveedoresFacturados ?? 0).toFixed(2)).toFixed(2) }}</div>
             <div class="text-lg font-bold">Total: {{ (paginationData.serviciosProveedores ?? 0).toFixed(2) }}</div>
           </div>
-          <div class="bg-green-100 text-green-800 rounded p-3">
+          <div class="bg-blue-100 text-blue-800 rounded p-3">
             <div class="text-sm font-medium">Suma: Servicios prestados a Clientes</div>
             <div class="text-lg font-bold">Facturado: {{ (paginationData.serviciosClientesFacturados ?? 0).toFixed(2) }}</div>
-            <div class="text-lg font-bold">No Facturado: {{ (paginationData.serviciosClientes ?? 0).toFixed(2) - (paginationData.serviciosClientesFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ ((paginationData.serviciosClientes ?? 0).toFixed(2) - (paginationData.serviciosClientesFacturados ?? 0).toFixed(2)).toFixed(2) }}</div>
             <div class="text-lg font-bold">Total: {{ (paginationData.serviciosClientes ?? 0).toFixed(2) }}</div>
           </div>
-          <div class="bg-red-100 text-red-800 rounded p-3">
+          <div class="bg-orange-100 text-orange-800 rounded p-3">
             <div class="text-sm font-medium">Suma: Productos comprados a Proveedores</div>
             <div class="text-lg font-bold">Facturado: {{ (paginationData.productosProveedorFacturados ?? 0).toFixed(2) }}</div>
-            <div class="text-lg font-bold">No Facturado: {{ (paginationData.productosProveedor ?? 0).toFixed(2) - (paginationData.productosProveedorFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ ((paginationData.productosProveedor ?? 0).toFixed(2) - (paginationData.productosProveedorFacturados ?? 0).toFixed(2)).toFixed(2) }}</div>
             <div class="text-lg font-bold">Total: {{ (paginationData.productosProveedor ?? 0).toFixed(2) }}</div>
           </div>
-          <div class="bg-green-100 text-green-800 rounded p-3">
+          <div class="bg-blue-100 text-blue-800 rounded p-3">
             <div class="text-sm font-medium">Suma: Productos vendidos a Clientes</div>
             <div class="text-lg font-bold">Facturado: {{ (paginationData.productosClientesFacturados ?? 0).toFixed(2) }}</div>
-            <div class="text-lg font-bold">No Facturado: {{ (paginationData.productosClientes ?? 0).toFixed(2) - (paginationData.productosClientesFacturados ?? 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">No Facturado: {{ ((paginationData.productosClientes ?? 0).toFixed(2) - (paginationData.productosClientesFacturados ?? 0).toFixed(2)).toFixed(2) }}</div>
             <div class="text-lg font-bold">Total: {{ (paginationData.productosClientes ?? 0).toFixed(2) }}</div>
           </div>
         </div>

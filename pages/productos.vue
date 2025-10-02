@@ -158,7 +158,10 @@ const productosColumns = [
   { key: 'codigo', label: 'Código' },
   { key: 'nombre', label: 'Nombre' },
   { key: 'unidadMedida', label: 'Unidad de Medida' },
-  { key: 'precio', label: 'Precio' }
+  { key: 'precio', label: 'Precio' },
+  { key: 'costo', label: 'Costo' },
+  { key: 'tipoProducto', label: 'Tipo de Producto' },
+  { key: 'cantidadExistencia', label: 'Existencia' }
 ];
 const deleteIcon = {
   render() {

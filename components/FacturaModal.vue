@@ -170,6 +170,66 @@ a <template>
           </div>
         </div>
 
+        <!-- Contenedor de Productos -->
+        <div v-if="selectedTipo === 'productos'" class="mt-4">
+          <h3 class="text-lg font-semibold mb-2">Productos</h3>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 font-semibold text-gray-700">
+            <span>Descripción</span>
+            <span>Uni/Medida</span>
+            <span>Cantidad</span>
+            <span>Importe</span>
+            <span>Acción</span>
+          </div>
+          <div v-for="(producto, index) in productos" :key="index" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2">
+            <input v-model="producto.descripcion" type="text" placeholder="Descripción" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <input v-model="producto.uniMedida" type="text" placeholder="Uni/Medida" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <input v-model.number="producto.cantidad" @blur="formatCantidad(producto)" type="number" placeholder="Cantidad" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <input v-model.number="producto.importe" @blur="formatImporte(producto)" type="number" placeholder="Importe" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <button @click="removeProducto(index)" type="button" class="px-4 py-2 bg-red-500 text-white rounded flex items-center" :disabled="isViewing || isLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Eliminar
+            </button>
+          </div>
+          <button @click="addProducto" type="button" class="px-4 py-2 bg-purple-500 text-white rounded mt-2 flex items-center" :disabled="isViewing || isLoading">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Producto
+          </button>
+        </div>
+
+        <!-- Contenedor de Servicios -->
+        <div v-if="selectedTipo === 'servicios'" class="mt-4">
+          <h3 class="text-lg font-semibold mb-2">Servicios</h3>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 font-semibold text-gray-700">
+            <span>Descripción</span>
+            <span>Uni/Medida</span>
+            <span>Cantidad</span>
+            <span>Importe</span>
+            <span>Acción</span>
+          </div>
+          <div v-for="(servicio, index) in servicios" :key="index" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2">
+            <input v-model="servicio.descripcion" type="text" placeholder="Descripción" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <input v-model="servicio.uniMedida" type="text" placeholder="Uni/Medida" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <input v-model.number="servicio.cantidad" type="number" placeholder="Cantidad" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <input v-model.number="servicio.importe" type="number" placeholder="Importe" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
+            <button @click="removeServicio(index)" type="button" class="px-4 py-2 bg-red-500 text-white rounded flex items-center" :disabled="isViewing || isLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Eliminar
+            </button>
+          </div>
+          <button @click="addServicio" type="button" class="px-4 py-2 bg-purple-500 text-white rounded mt-2 flex items-center" :disabled="isViewing || isLoading">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Servicio
+          </button>
+        </div>
+
         <!-- Botones de acción -->
         <div class="flex justify-end space-x-4 mt-6" v-if="!isViewing">
           <button type="button" @click="$emit('update:modelValue', false)"
@@ -276,6 +336,9 @@ const estadoOptions = ref([
   { label: 'Cancelado', value: 'Cancelado' }
 ]);
 
+const servicios = ref([{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }]);
+const productos = ref([{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }]);
+
 const errorMsg = ref('');
 const isLoading = ref(false);
 const loadingBanner = ref(null);
@@ -368,6 +431,17 @@ watch(() => props.factura, async (factura) => {
       nota: factura.nota || '',
       cargoAdicional: factura.cargoAdicional || ''
     };
+    // Load productos and servicios
+    if (factura.productos && factura.productos.length > 0) {
+      productos.value = [...factura.productos];
+    } else {
+      productos.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
+    }
+    if (factura.servicios && factura.servicios.length > 0) {
+      servicios.value = [...factura.servicios];
+    } else {
+      servicios.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
+    }
     // Load contratosFiltrados based on the entity in factura
     if (factura.contrato?.id_entidad) {
       await cargarContratosPorEntidad(factura.contrato.id_entidad);
@@ -408,6 +482,8 @@ watch(() => props.factura, async (factura) => {
     entidadCompleta.value = null;
     usuarioData.value = null;
     trabajadorData.value = null;
+    productos.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
+    servicios.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
   }
 }, { immediate: true });
 
@@ -424,6 +500,26 @@ watch(() => formData.value.id_contrato, (newIdContrato) => {
     }
   }
 });
+
+// Watcher para agregar automáticamente una nueva fila de producto cuando la última esté completa
+watch(() => productos.value, (newProductos) => {
+  if (newProductos.length > 0 && !props.isViewing) {
+    const last = newProductos[newProductos.length - 1];
+    if (last.descripcion && last.uniMedida && last.cantidad > 0 && last.importe > 0) {
+      productos.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+    }
+  }
+}, { deep: true });
+
+// Watcher para agregar automáticamente una nueva fila de servicio cuando la última esté completa
+watch(() => servicios.value, (newServicios) => {
+  if (newServicios.length > 0 && !props.isViewing) {
+    const last = newServicios[newServicios.length - 1];
+    if (last.descripcion && last.uniMedida && last.cantidad > 0 && last.importe > 0) {
+      servicios.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+    }
+  }
+}, { deep: true });
 
 const handleSubmit = async () => {
   errorMsg.value = '';
@@ -685,5 +781,32 @@ async function cargarTrabajadorPorId(trabajadorId) {
   }
 }
 
+function addServicio() {
+  servicios.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+}
+
+function removeServicio(index) {
+  if (servicios.value.length > 1) servicios.value.splice(index, 1);
+}
+
+function addProducto() {
+  productos.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+}
+
+function removeProducto(index) {
+  if (productos.value.length > 1) productos.value.splice(index, 1);
+}
+
+const formatCantidad = (item) => {
+  if (item.cantidad !== undefined && item.cantidad !== null) {
+    item.cantidad = Number(item.cantidad).toFixed(2);
+  }
+};
+
+const formatImporte = (item) => {
+  if (item.importe !== undefined && item.importe !== null) {
+    item.importe = Number(item.importe).toFixed(2);
+  }
+};
 
 </script>

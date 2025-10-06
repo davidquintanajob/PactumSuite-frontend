@@ -553,41 +553,104 @@ async function confirmDeleteFactura() {
   }
 }
 
-// Función para manejar el submit del modal (comentada por ahora)
 const handleFacturaSubmit = async (formData) => {
-  // TODO: Implementar lógica de crear/actualizar facturas
-  // const token = localStorage.getItem('token');
-  // 
-  // if (!token) {
-  //   navigateTo('/');
-  //   return;
-  // }
-  // 
-  // try {
-  //   const url = isEditing.value
-  //     ? `${config.public.backendHost}/Factura/updateFactura/${selectedFactura.value.id_factura}`
-  //     : `${config.public.backendHost}/Factura/createFactura`;
-  //   const response = await fetch(url, {
-  //     method: isEditing.value ? 'PUT' : 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       'Authorization': token,
-  //       'Accept': 'application/json'
-  //     },
-  //     body: JSON.stringify(formData)
-  //   });
-  //   
-  //   // Manejo de respuestas...
-  //   
-  // } catch (error) {
-  //   errorBanner.value = {
-  //     title: 'Error',
-  //     description: error.message,
-  //     type: 'error'
-  //   };
-  // }
+  const token = localStorage.getItem('token');
   
-  showModal.value = false;
+  if (!token) {
+    navigateTo('/');
+    return;
+  }
+
+  try {
+    const url = isEditing.value
+      ? `${config.public.backendHost}/Factura/updateFactura/${selectedFactura.value.id_factura}`
+      : `${config.public.backendHost}/Factura/createFactura`;
+    const response = await fetch(url, {
+      method: isEditing.value ? 'PUT' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción.',
+        type: 'error'
+      };
+      return;
+    }
+
+    if (response.status === 400 || response.status === 500) {
+      const errorData = await response.json();
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        errorBanner.value = {
+          title: `Errores de validación: ${response.status}`,
+          description: errorData.errors.join('\n'),
+          type: 'error'
+        };
+      } else if (errorData.error) {
+        errorBanner.value = {
+          title: `Error: ${response.status}`,
+          description: errorData.error,
+          type: 'error'
+        };
+      } else {
+        errorBanner.value = {
+          title: `Error: ${response.status}`,
+          description: JSON.stringify(errorData),
+          type: 'error'
+        };
+      }
+      return;
+    }
+
+    if (!response.ok) {
+      let errorMsg = 'No se pudo guardar la factura';
+      try {
+        const errorData = await response.json();
+        if (errorData && errorData.message) {
+          errorMsg = errorData.message;
+        }
+      } catch (e) {}
+      throw new Error(errorMsg);
+    }
+
+    // Éxito
+    errorBanner.value = {
+      title: 'Éxito',
+      description: isEditing.value ? 'Factura actualizada correctamente' : 'Factura creada correctamente',
+      type: 'success'
+    };
+
+    // Cerrar modal y refrescar lista
+    showModal.value = false;
+    fetchFacturas(currentPage.value);
+
+  } catch (error) {
+    errorBanner.value = {
+      title: 'Error',
+      description: error.message,
+      type: 'error'
+    };
+  }
 };
 
 // Función de exportación

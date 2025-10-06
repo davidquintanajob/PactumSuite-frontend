@@ -114,7 +114,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'entidad-seleccionada']);
+const emit = defineEmits(['update:modelValue', 'entidad-seleccionada', 'producto-seleccionado']);
 
 // Referencias
 const inputRef = ref(null);
@@ -308,10 +308,15 @@ const selectOption = (option) => {
   highlightedIndex.value = -1;
   
   emit('update:modelValue', selectedValue.value);
-  
+
   // Emitir el objeto completo para entidades
   if (props.valueKey === 'id_entidad') {
     emit('entidad-seleccionada', option);
+  }
+
+  // Emitir el objeto completo para productos
+  if (props.valueKey === 'id_producto') {
+    emit('producto-seleccionado', option);
   }
 };
 
@@ -325,10 +330,15 @@ const clearSelection = () => {
   filteredOptions.value = [];
   
   emit('update:modelValue', null);
-  
+
   // Emitir null para entidades cuando se limpia
   if (props.valueKey === 'id_entidad') {
     emit('entidad-seleccionada', null);
+  }
+
+  // Emitir null para productos cuando se limpia
+  if (props.valueKey === 'id_producto') {
+    emit('producto-seleccionado', null);
   }
   
   // Enfocar el input

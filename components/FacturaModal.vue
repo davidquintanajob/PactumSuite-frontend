@@ -173,62 +173,84 @@ a <template>
         <!-- Contenedor de Productos -->
         <div v-if="selectedTipo === 'productos'" class="mt-4">
           <h3 class="text-lg font-semibold mb-2">Productos</h3>
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 font-semibold text-gray-700">
-            <span>Descripción</span>
+          <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-2 font-semibold text-gray-700">
+            <span class="col-span-2">Producto</span>
             <span>Uni/Medida</span>
             <span>Cantidad</span>
-            <span>Importe</span>
+            <span>Precio</span>
+            <span>Total</span>
             <span>Acción</span>
           </div>
-          <div v-for="(producto, index) in productos" :key="index" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2">
-            <input v-model="producto.descripcion" type="text" placeholder="Descripción" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <input v-model="producto.uniMedida" type="text" placeholder="Uni/Medida" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <input v-model.number="producto.cantidad" @blur="formatCantidad(producto)" type="number" placeholder="Cantidad" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <input v-model.number="producto.importe" @blur="formatImporte(producto)" type="number" placeholder="Importe" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <button @click="removeProducto(index)" type="button" class="px-4 py-2 bg-red-500 text-white rounded flex items-center" :disabled="isViewing || isLoading">
+          <div v-for="(producto, index) in productos" :key="index" class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-2">
+            <SelectSearchAPI
+              v-model="producto.id_producto"
+              endpoint="/producto/filterProductos/1/10"
+              method="POST"
+              search-key="nombre"
+              label-key="nombre"
+              value-key="id_producto"
+              placeholder="Buscar producto por nombre..."
+              :disabled="isViewing || isLoading"
+              :initial-label="producto.nombre || ''"
+              @producto-seleccionado="(selected) => handleProductoSeleccionado(selected, index)"
+              class="col-span-2"
+            />
+            <input v-model="producto.unidadMedida" type="text" placeholder="Uni/Medida" readonly class="px-4 py-2 border-2 border-gray-400 rounded-lg opacity-50" />
+            <input v-model.number="producto.cantidad" @blur="formatCantidad(producto)" type="number" step="0.01" placeholder="Cantidad" class="px-4 py-2 border-2 border-gray-400 rounded-lg" :disabled="isViewing || isLoading" />
+            <input v-model.number="producto.precio" @blur="formatPrecio(producto)" type="number" step="0.01" placeholder="Precio" :readonly="!isEditing || isViewing" :disabled="isViewing || isLoading" class="px-4 py-2 border-2 border-gray-400 rounded-lg" :class="{ 'opacity-50': !isEditing || isViewing }" />
+            <input :value="calcularTotal(producto)" type="text" readonly class="px-4 py-2 border-2 border-blue-400 bg-blue-50 rounded-lg font-bold text-blue-800" />
+            <button @click="removeProducto(index)" type="button" class="px-4 py-2 bg-red-500 text-white rounded-lg flex items-center" :disabled="isViewing || isLoading">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
               Eliminar
             </button>
           </div>
-          <button @click="addProducto" type="button" class="px-4 py-2 bg-purple-500 text-white rounded mt-2 flex items-center" :disabled="isViewing || isLoading">
+          <button @click="addProducto" type="button" class="px-4 py-2 bg-purple-500 text-white rounded-lg mt-2 flex items-center" :disabled="isViewing || isLoading">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Producto
           </button>
+          <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+            <strong>Importe Total Productos: {{ importeTotalProductos }}</strong>
+          </div>
         </div>
 
-        <!-- Contenedor de Servicios -->
-        <div v-if="selectedTipo === 'servicios'" class="mt-4">
-          <h3 class="text-lg font-semibold mb-2">Servicios</h3>
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2 font-semibold text-gray-700">
-            <span>Descripción</span>
-            <span>Uni/Medida</span>
-            <span>Cantidad</span>
-            <span>Importe</span>
-            <span>Acción</span>
-          </div>
-          <div v-for="(servicio, index) in servicios" :key="index" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-2">
-            <input v-model="servicio.descripcion" type="text" placeholder="Descripción" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <input v-model="servicio.uniMedida" type="text" placeholder="Uni/Medida" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <input v-model.number="servicio.cantidad" type="number" placeholder="Cantidad" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <input v-model.number="servicio.importe" type="number" placeholder="Importe" class="px-4 py-2 border rounded" :disabled="isViewing || isLoading" />
-            <button @click="removeServicio(index)" type="button" class="px-4 py-2 bg-red-500 text-white rounded flex items-center" :disabled="isViewing || isLoading">
+          <!-- Contenedor de Servicios -->
+          <div v-if="selectedTipo === 'servicios'" class="mt-4">
+            <h3 class="text-lg font-semibold mb-2">Servicios</h3>
+            <div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-2 font-semibold text-gray-700">
+              <span class="col-span-2">Descripción</span>
+              <span>Uni/Medida</span>
+              <span>Cantidad</span>
+              <span>Importe</span>
+              <span>Total</span>
+              <span>Acción</span>
+            </div>
+            <div v-for="(servicio, index) in services" :key="servicio.id_servicio" class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-2">
+              <input v-model="servicio.descripcion" type="text" placeholder="Descripción" class="col-span-2 px-4 py-2 border-2 border-gray-400 rounded-lg" :disabled="isViewing || isLoading" />
+            <input v-model="servicio.unidadMedida" type="text" placeholder="Uni/Medida" class="px-4 py-2 border-2 border-gray-400 rounded-lg" :disabled="isViewing || isLoading" />
+              <input v-model.number="servicio.cantidad" @blur="formatCantidad(servicio)" type="number" step="0.01" placeholder="Cantidad" class="px-4 py-2 border-2 border-gray-400 rounded-lg" :disabled="isViewing || isLoading" />
+              <input v-model.number="servicio.importe" @blur="formatImporte(servicio)" type="number" step="0.01" placeholder="Importe" class="px-4 py-2 border-2 border-gray-400 rounded-lg" :disabled="isViewing || isLoading" />
+              <input :value="calcularTotal(servicio)" type="text" readonly class="px-4 py-2 border-2 border-blue-400 bg-blue-50 rounded-lg font-bold text-blue-800" />
+              <button @click="removeServicio(index)" type="button" class="px-4 py-2 bg-red-500 text-white rounded-lg flex items-center" :disabled="isViewing || isLoading">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Eliminar
+              </button>
+            </div>
+            <button @click="addServicio" type="button" class="px-4 py-2 bg-purple-500 text-white rounded-lg mt-2 flex items-center" :disabled="isViewing || isLoading">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Eliminar
+              Servicio
             </button>
+            <div class="mt-4 p-4 bg-gray-100 rounded-lg">
+              <strong>Importe Total Servicios: {{ importeTotalServicios }}</strong>
+            </div>
           </div>
-          <button @click="addServicio" type="button" class="px-4 py-2 bg-purple-500 text-white rounded mt-2 flex items-center" :disabled="isViewing || isLoading">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Servicio
-          </button>
-        </div>
 
         <!-- Botones de acción -->
         <div class="flex justify-end space-x-4 mt-6" v-if="!isViewing">
@@ -336,8 +358,8 @@ const estadoOptions = ref([
   { label: 'Cancelado', value: 'Cancelado' }
 ]);
 
-const servicios = ref([{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }]);
-const productos = ref([{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }]);
+const services = ref([{ descripcion: '', unidadMedida: '', cantidad: 0, importe: 0 }]);
+const productos = ref([{ id_producto: '', nombre: '', unidadMedida: '', cantidad: 0, precio: 0 }]);
 
 const errorMsg = ref('');
 const isLoading = ref(false);
@@ -432,15 +454,29 @@ watch(() => props.factura, async (factura) => {
       cargoAdicional: factura.cargoAdicional || ''
     };
     // Load productos and servicios
-    if (factura.productos && factura.productos.length > 0) {
-      productos.value = [...factura.productos];
+    if (factura.servicio && factura.servicio.length > 0) {
+      selectedTipo.value = 'servicios';
+      services.value = [...factura.servicio];
+      formData.value.services = [...factura.servicio];
+      productos.value = [{ id_producto: '', nombre: '', unidadMedida: '', cantidad: 0, precio: 0 }];
+      formData.value.products = [];
     } else {
-      productos.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
-    }
-    if (factura.servicios && factura.servicios.length > 0) {
-      servicios.value = [...factura.servicios];
-    } else {
-      servicios.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
+      selectedTipo.value = 'productos'; // default
+      if (factura.productos && factura.productos.length > 0) {
+        productos.value = factura.productos.map(producto => ({
+          id_producto: producto.id_producto,
+          nombre: producto.nombre,
+          unidadMedida: producto.unidadMedida,
+          cantidad: producto.factura_producto?.cantidad || 0,
+          precio: producto.factura_producto?.precioVenta || producto.precio
+        }));
+        formData.value.products = [...factura.productos];
+      } else {
+        productos.value = [{ id_producto: '', nombre: '', unidadMedida: '', cantidad: 0, precio: 0 }];
+        formData.value.products = [];
+      }
+      services.value = [{ descripcion: '', unidadMedida: '', cantidad: 0, importe: 0 }];
+      formData.value.services = [];
     }
     // Load contratosFiltrados based on the entity in factura
     if (factura.contrato?.id_entidad) {
@@ -482,8 +518,8 @@ watch(() => props.factura, async (factura) => {
     entidadCompleta.value = null;
     usuarioData.value = null;
     trabajadorData.value = null;
-    productos.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
-    servicios.value = [{ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 }];
+    productos.value = [{ id_producto: '', nombre: '', unidadMedida: '', cantidad: 0, precio: 0 }];
+    services.value = [{ descripcion: '', unidadMedida: '', cantidad: 0, importe: 0 }];
   }
 }, { immediate: true });
 
@@ -505,24 +541,33 @@ watch(() => formData.value.id_contrato, (newIdContrato) => {
 watch(() => productos.value, (newProductos) => {
   if (newProductos.length > 0 && !props.isViewing) {
     const last = newProductos[newProductos.length - 1];
-    if (last.descripcion && last.uniMedida && last.cantidad > 0 && last.importe > 0) {
-      productos.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+    if (last.id_producto && last.unidadMedida && last.cantidad > 0 && last.precio > 0) {
+      productos.value.push({ id_producto: '', nombre: '', unidadMedida: '', cantidad: 0, precio: 0 });
     }
   }
 }, { deep: true });
 
 // Watcher para agregar automáticamente una nueva fila de servicio cuando la última esté completa
-watch(() => servicios.value, (newServicios) => {
+watch(() => services.value, (newServicios) => {
   if (newServicios.length > 0 && !props.isViewing) {
     const last = newServicios[newServicios.length - 1];
-    if (last.descripcion && last.uniMedida && last.cantidad > 0 && last.importe > 0) {
-      servicios.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+    if (last.descripcion && last.unidadMedida && last.cantidad > 0 && last.importe > 0) {
+      services.value.push({ descripcion: '', unidadMedida: '', cantidad: 0, importe: 0 });
     }
   }
 }, { deep: true });
 
 const handleSubmit = async () => {
   errorMsg.value = '';
+
+  // Sync only the selected type's array to formData before submit
+  if (selectedTipo.value === 'productos') {
+    formData.value.products = productos.value.filter(p => p.id_producto && p.cantidad > 0);
+    delete formData.value.services;
+  } else {
+    formData.value.services = services.value.filter(s => s.descripcion && s.unidadMedida && s.cantidad > 0 && s.importe > 0);
+    delete formData.value.products;
+  }
 
   // Si es una nueva factura, obtener el id_usuario del localStorage
   if (!props.isEditing && !props.isViewing) {
@@ -569,12 +614,8 @@ const handleSubmit = async () => {
   };
 
   try {
-    // Emitir el evento submit y esperar la respuesta
-    await new Promise((resolve, reject) => {
-      emit('submit', { ...formData.value });
-      // Simular un pequeño delay para que el usuario vea el mensaje
-      setTimeout(resolve, 100);
-    });
+    // Emitir el evento submit
+    emit('submit', { ...formData.value });
   } catch (error) {
     console.error('Error en handleSubmit:', error);
   } finally {
@@ -782,15 +823,51 @@ async function cargarTrabajadorPorId(trabajadorId) {
 }
 
 function addServicio() {
-  servicios.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+  services.value.push({ descripcion: '', unidadMedida: '', cantidad: 0, importe: 0 });
 }
 
 function removeServicio(index) {
-  if (servicios.value.length > 1) servicios.value.splice(index, 1);
+  if (services.value.length > 1) services.value.splice(index, 1);
 }
 
 function addProducto() {
-  productos.value.push({ descripcion: '', uniMedida: '', cantidad: 0, importe: 0 });
+  productos.value.push({ id_producto: '', nombre: '', unidadMedida: '', cantidad: 0, precio: 0 });
+}
+
+function handleProductoSeleccionado(selected, index) {
+  if (index >= 0 && index < productos.value.length) {
+    if (selected) {
+      // Find matching facturaProducto for the current factura
+      let cantidad = 0;
+      let precio = selected.precio || 0;
+      if (props.factura && props.factura.id_factura && selected.facturaProductos) {
+        const matchingFacturaProducto = selected.facturaProductos.find(fp => fp.id_factura === props.factura.id_factura);
+        if (matchingFacturaProducto) {
+          cantidad = Number(matchingFacturaProducto.cantidad) || 0;
+          precio = Number(matchingFacturaProducto.precioVenta) || selected.precio || 0;
+        }
+      }
+
+      productos.value[index] = {
+        ...productos.value[index],
+        id_producto: selected.id_producto,
+        nombre: selected.nombre,
+        unidadMedida: selected.unidadMedida || '',
+        cantidad: cantidad,
+        precio: precio
+      };
+    } else {
+      // Clearing selection
+      productos.value[index] = {
+        ...productos.value[index],
+        id_producto: '',
+        nombre: '',
+        unidadMedida: '',
+        cantidad: 0,
+        precio: 0
+      };
+    }
+  }
 }
 
 function removeProducto(index) {
@@ -803,10 +880,39 @@ const formatCantidad = (item) => {
   }
 };
 
+const formatPrecio = (item) => {
+  if (item.precio !== undefined && item.precio !== null) {
+    item.precio = Number(item.precio).toFixed(2);
+  }
+};
+
 const formatImporte = (item) => {
   if (item.importe !== undefined && item.importe !== null) {
     item.importe = Number(item.importe).toFixed(2);
   }
 };
+
+function calcularTotal(item) {
+  const cantidad = Number(item.cantidad) || 0;
+  const precio = Number(item.precio) || 0;
+  const importe = Number(item.importe) || 0;
+  // For productos, use precio; for servicios, use importe
+  const multiplier = item.precio !== undefined ? precio : importe;
+  return (cantidad * multiplier).toFixed(2);
+}
+
+const importeTotalProductos = computed(() => {
+  const productosTotal = productos.value.reduce((total, producto) => {
+    return total + (Number(producto.cantidad) * Number(producto.precio));
+  }, 0);
+  return (productosTotal + (Number(formData.value.cargoAdicional) || 0)).toFixed(2);
+});
+
+const importeTotalServicios = computed(() => {
+  const serviciosTotal = services.value.reduce((total, servicio) => {
+    return total + (Number(servicio.cantidad) * Number(servicio.importe));
+  }, 0);
+  return (serviciosTotal + (Number(formData.value.cargoAdicional) || 0)).toFixed(2);
+});
 
 </script>

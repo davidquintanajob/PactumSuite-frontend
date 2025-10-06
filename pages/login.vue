@@ -2,7 +2,7 @@
   <div class="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta title="Iniciar Sesión - Contract Manager" description="Accede a Contract Manager para gestionar contratos y entidades." canonical="/login" />
     <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-      <img class="mx-auto h-24 w-24 rounded-full shadow mt-8" src="/logo.jpeg" alt="Logo" />
+      <img class="mx-auto h-24 w-24 rounded-full shadow mt-8" src="/logo.png" alt="Logo" />
       <h2 class="mt-8 text-center text-2xl font-bold tracking-tight text-gray-900">Inicia sesión en tu cuenta</h2>
     </div>
 

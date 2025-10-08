@@ -116,14 +116,34 @@
             />
           </div>
         </div>
-        <div class="flex justify-end mt-4 gap-2">
+        <div class="flex justify-end mt-4 gap-2 flex-wrap">
           <button @click="handleSearch"
             class="px-6 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
             Buscar
           </button>
           <button @click="exportToExcel"
-            class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors">
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
             Exportar a Excel
+          </button>
+          <button @click="exportToExcelWithProductos"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            Exportar a Excel con Productos
+          </button>
+          <button @click="exportToExcelWithServicios"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Exportar a Excel con Servicios
           </button>
         </div>
       </div>
@@ -654,22 +674,322 @@ const handleFacturaSubmit = async (formData) => {
 };
 
 // Función de exportación
-function exportToExcel() {
-  const exportData = itemsData.value.map(item => ({
-    'Num. Consecutivo': item.num_consecutivo,
-    'Fecha': item.fecha ? item.fecha.substring(0, 10) : '',
-    'Estado': item.estado,
-    'Creado por': item.usuario?.nombre || '',
-    'Cliente o Proveedor': item.contrato?.ClienteOProveedor || '',
-    'Contrato': item.contrato?.num_consecutivo || '',
-    'Tipo Contrato': item.contrato?.tipoContrato?.nombre || '',
-    'Importe': item.suma_general ? parseFloat(item.suma_general).toFixed(2) : '',
-    'Entidad': item.contrato?.entidad?.nombre || ''
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Facturas');
-  XLSX.writeFile(workbook, 'facturas.xlsx');
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      id_contrato: id_contrato.value || 0,
+      id_entidad: id_entidad.value || 0,
+      consecutivoEntidad: consecutivoEntidad.value || undefined,
+      organismoEntidad: organismoEntidad.value || undefined,
+      num_consecutivo: num_consecutivo.value || 0,
+      fecha_desde: fecha_desde.value || undefined,
+      fecha_hasta: fecha_hasta.value || undefined,
+      estado: estado.value || undefined,
+      id_trabajador_autorizado: id_trabajador_autorizado.value || 0,
+      id_usuario: id_usuario.value || 0
+    };
+
+    const response = await fetch(`${config.public.backendHost}/Factura/filterFacturas/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = data.data.map(item => ({
+      'Num. Consecutivo': item.num_consecutivo,
+      'Fecha': item.fecha ? item.fecha.substring(0, 10) : '',
+      'Estado': item.estado,
+      'Creado por': item.usuario?.nombre || '',
+      'Cliente o Proveedor': item.contrato?.ClienteOProveedor || '',
+      'Contrato': item.contrato?.num_consecutivo || '',
+      'Tipo Contrato': item.contrato?.tipoContrato?.nombre || '',
+      'Importe': item.suma_general ? parseFloat(item.suma_general).toFixed(2) : '',
+      'Entidad': item.contrato?.entidad?.nombre || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Facturas');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `facturas_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+// Nueva función para exportar facturas con productos
+async function exportToExcelWithProductos() {
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const bodyData = {
+      id_contrato: id_contrato.value || 0,
+      id_entidad: id_entidad.value || 0,
+      consecutivoEntidad: consecutivoEntidad.value || undefined,
+      organismoEntidad: organismoEntidad.value || undefined,
+      num_consecutivo: num_consecutivo.value || 0,
+      fecha_desde: fecha_desde.value || undefined,
+      fecha_hasta: fecha_hasta.value || undefined,
+      estado: estado.value || undefined,
+      id_trabajador_autorizado: id_trabajador_autorizado.value || 0,
+      id_usuario: id_usuario.value || 0
+    };
+
+    const response = await fetch(`${config.public.backendHost}/Factura/filterFacturas/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Construir datos para exportar con productos
+    const exportData = [];
+    data.data.forEach(factura => {
+      if (factura.productos && factura.productos.length > 0) {
+        factura.productos.forEach(producto => {
+          exportData.push({
+            'Num. Consecutivo Factura': factura.num_consecutivo,
+            'Fecha Factura': factura.fecha ? factura.fecha.substring(0, 10) : '',
+            'Estado Factura': factura.estado,
+            'Creado por': factura.usuario?.nombre || '',
+            'Cliente o Proveedor': factura.contrato?.ClienteOProveedor || '',
+            'Contrato': factura.contrato?.num_consecutivo || '',
+            'Tipo Contrato': factura.contrato?.tipoContrato?.nombre || '',
+            'Entidad': factura.contrato?.entidad?.nombre || '',
+            'Código Producto': producto.codigo,
+            'Nombre Producto': producto.nombre,
+            'Unidad de Medida': producto.unidadMedida,
+            'Nota Producto': producto.nota,
+            'Tipo Producto': producto.tipoProducto,
+            'Cantidad Existencia': producto.cantidadExistencia,
+            'Cantidad Facturada': producto.factura_producto?.cantidad || '',
+            'Precio Venta': Number(producto.factura_producto?.precioVenta).toFixed(2) || ''
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Facturas con Productos');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `facturas_con_productos_${date}.xlsx`);
+
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel con productos:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos con productos.',
+      type: 'error'
+    };
+  }
+}
+
+// Nueva función para exportar facturas con servicios
+async function exportToExcelWithServicios() {
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const bodyData = {
+      id_contrato: id_contrato.value || 0,
+      id_entidad: id_entidad.value || 0,
+      consecutivoEntidad: consecutivoEntidad.value || undefined,
+      organismoEntidad: organismoEntidad.value || undefined,
+      num_consecutivo: num_consecutivo.value || 0,
+      fecha_desde: fecha_desde.value || undefined,
+      fecha_hasta: fecha_hasta.value || undefined,
+      estado: estado.value || undefined,
+      id_trabajador_autorizado: id_trabajador_autorizado.value || 0,
+      id_usuario: id_usuario.value || 0
+    };
+
+    const response = await fetch(`${config.public.backendHost}/Factura/filterFacturas/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Construir datos para exportar con servicios
+    const exportData = [];
+    data.data.forEach(factura => {
+      if (factura.servicio && factura.servicio.length > 0) {
+        factura.servicio.forEach(servicio => {
+          exportData.push({
+            'Num. Consecutivo Factura': factura.num_consecutivo,
+            'Fecha Factura': factura.fecha ? factura.fecha.substring(0, 10) : '',
+            'Estado Factura': factura.estado,
+            'Creado por': factura.usuario?.nombre || '',
+            'Cliente o Proveedor': factura.contrato?.ClienteOProveedor || '',
+            'Contrato': factura.contrato?.num_consecutivo || '',
+            'Tipo Contrato': factura.contrato?.tipoContrato?.nombre || '',
+            'Entidad': factura.contrato?.entidad?.nombre || '',
+            'Descripción Servicio': servicio.descripcion,
+            'Importe Servicio': servicio.importe,
+            'Cantidad Servicio': servicio.cantidad,
+            'Unidad de Medida': servicio.unidadMedida
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Facturas con Servicios');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `facturas_con_servicios_${date}.xlsx`);
+
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel con servicios:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos con servicios.',
+      type: 'error'
+    };
+  }
 }
 
 // Función para manejar cuando se selecciona una entidad

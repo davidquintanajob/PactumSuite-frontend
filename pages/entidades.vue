@@ -127,6 +127,10 @@
               class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors">
                 Exportar a Excel
             </button>
+            <button @click="exportToExcelWithContracts"
+              class="px-6 py-2 bg-info text-neutral rounded-lg hover:bg-info/90 focus:outline-none focus:ring-2 focus:ring-info focus:ring-offset-2 transition-colors">
+                Exportar a Excel con Contratos
+            </button>
           </div>
         </div>
       </div>
@@ -535,23 +539,222 @@ async function confirmDeleteEntidad() {
 }
 
 // Función para exportar a Excel
-function exportToExcel() {
-  // Selecciona solo las columnas visibles en la tabla
-  const exportData = itemsData.value.map(item => ({
-    'ID': item.id_entidad,
-    'Consecutivo': item.consecutivo,
-    'Nombre de la Entidad': item.nombre,
-    'Organismo': item.organismo,
-    'Teléfono': item.telefono,
-    'Cuenta Bancaria': item.cuenta_bancaria,
-    'Tipo de Entidad': item.tipo_entidad,
-    'Reo': item.codigo_reo,
-    'Nit': item.codigo_nit
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Entidades');
-  XLSX.writeFile(workbook, 'entidades.xlsx');
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    // Obtener token de autentificación
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      nombre: nombre.value,
+      direccion: direccion.value,
+      telefono: telefono.value,
+      cuenta_bancaria: cuenta_bancaria.value,
+      tipo_entidad: tipo_entidad.value,
+      codigo_reo: codigo_reo.value,
+      codigo_nit: codigo_nit.value,
+      organismo: organismo.value,
+      consecutivo: consecutivo.value
+    };
+
+    const response = await fetch(`${config.public.backendHost}/entidad/filter/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = data.data.map(item => ({
+      Consecutivo: item.consecutivo,
+      Nombre: item.nombre,
+      Dirección: item.direccion,
+      Organismo: item.organismo,
+      'Cuenta Bancaria': item.cuenta_bancaria,
+      'Tipo de Entidad': item.tipo_entidad,
+      'Código REEUP': item.codigo_reo,
+      'Código NIT': item.codigo_nit,
+      Teléfono: item.telefono
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Entidades');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `entidades_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+// Función para exportar a Excel con contratos
+async function exportToExcelWithContracts() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    // Obtener token de autentificación
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      nombre: nombre.value,
+      direccion: direccion.value,
+      telefono: telefono.value,
+      cuenta_bancaria: cuenta_bancaria.value,
+      tipo_entidad: tipo_entidad.value,
+      codigo_reo: codigo_reo.value,
+      codigo_nit: codigo_nit.value,
+      organismo: organismo.value,
+      consecutivo: consecutivo.value
+    };
+
+    const response = await fetch(`${config.public.backendHost}/entidad/filter/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas, incluyendo contratos
+    const exportData = [];
+    data.data.forEach(entity => {
+      if (entity.contratos && entity.contratos.length > 0) {
+        entity.contratos.forEach(contract => {
+          exportData.push({
+            // Campos de entidad
+            'Consecutivo Entidad': entity.consecutivo,
+            'Nombre Entidad': entity.nombre,
+            'Dirección Entidad': entity.direccion,
+            'Organismo Entidad': entity.organismo,
+            'Cuenta Bancaria Entidad': entity.cuenta_bancaria,
+            'Tipo de Entidad': entity.tipo_entidad,
+            'Código REEUP': entity.codigo_reo,
+            'Código NIT': entity.codigo_nit,
+            'Teléfono Entidad': entity.telefono,
+            // Campos de contrato
+            'Consecutivo Contrato': contract.num_consecutivo,
+            'Fecha Inicio': contract.fecha_inicio,
+            'Fecha Fin': contract.fecha_fin,
+            'Tipo de Contrato': contract.tipoContrato?.nombre || '',
+            'Cliente o Proveedor': contract.ClienteOProveedor,
+            'Vigencia Facturas (Días)': contract.vigenciaFacturasDias,
+            'Clasificación': contract.clasificacion,
+            'Nota': contract.nota
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Entidades con Contratos');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `entidades_contratos_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel con contratos:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
 }
   </script>
   

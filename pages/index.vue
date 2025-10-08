@@ -24,7 +24,7 @@
       <header class="flex flex-col items-center justify-center py-12">
         <img src="/logo.png" alt="Logo" class="h-40 w-40 shadow-md mb-4" />
         <h1 class="text-4xl md:text-5xl font-extrabold text-primary/80 mb-2 text-center drop-shadow">Pactum Suite</h1>
-        <p class="text-lg md:text-xl text-dark/70 text-center max-w-2xl">La plataforma integral para la gestión eficiente de contratos, entidades y trabajadores en tu organización.</p>
+        <p class="text-lg md:text-xl text-dark/70 text-center max-w-2xl">La plataforma integral para la gestión eficiente de contratos, entidades, facturas y productos de tu organización orientado al comercio.</p>
       </header>
 
       <!-- Funcionalidades principales y accesos directos -->
@@ -32,7 +32,7 @@
         <div class="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-7xl w-full mb-12">
           <div @click="goTo('contratos')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
             <svg class="h-12 w-12 text-primary mb-4 group-hover:brightness-90 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2a2 2 0 012-2h2a2 2 0 012 2v2m-6 4h6a2 2 0 002-2v-6a2 2 0 00-2-2h-2a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v2" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
             <h3 class="text-xl font-semibold text-primary mb-2">Contratos</h3>
             <p class="text-dark text-center">Gestiona todos los contratos de tu organización.</p>
@@ -43,28 +43,28 @@
               {{ contratosProximosCount }}
             </div>
             <svg class="h-12 w-12 text-accent mb-4 group-hover:text-primary transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m9-4V6a4 4 0 00-8 0v4m12 0a4 4 0 01-8 0m8 0V6a4 4 0 00-8 0v4" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3 class="text-xl font-semibold text-primary mb-2">Entidades</h3>
             <p class="text-dark text-center">Administra proveedores, clientes y otras entidades.</p>
           </div>
-          <div @click="goTo('ofertas')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
+          <div @click="goTo('facturas')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
             <svg class="h-12 w-12 text-accent mb-4 group-hover:text-primary transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 10c-4.418 0-8-1.79-8-4V6a2 2 0 012-2h12a2 2 0 012 2v8c0 2.21-3.582 4-8 4z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
-            <h3 class="text-xl font-semibold text-primary mb-2">Ofertas</h3>
-            <p class="text-dark text-center">Consulta y administra las ofertas asociadas a contratos.</p>
+            <h3 class="text-xl font-semibold text-primary mb-2">Facturas</h3>
+            <p class="text-dark text-center">Consulta y administra las facturas asociadas a contratos.</p>
           </div>
-          <div @click="goTo('tipos-contratos')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
+          <div @click="goTo('productos')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
             <svg class="h-12 w-12 text-accent mb-4 group-hover:text-primary transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4m-9 4h10m-10 4h10m-10 4h6" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
-            <h3 class="text-xl font-semibold text-primary mb-2">Tipos de Contrato</h3>
-            <p class="text-dark text-center">Gestiona los diferentes tipos de contrato disponibles.</p>
+            <h3 class="text-xl font-semibold text-primary mb-2">Productos</h3>
+            <p class="text-dark text-center">Gestiona los productos que tienes para la venta y la existencia de estos.</p>
           </div>
           <div @click="goTo('trabajadores')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
             <svg class="h-12 w-12 text-accent mb-4 group-hover:text-primary transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
             <h3 class="text-xl font-semibold text-primary mb-2">Trabajadores</h3>
             <p class="text-dark text-center">Registra y gestiona trabajadores autorizados y sus contratos.</p>
@@ -75,7 +75,7 @@
 
       <!-- Footer -->
       <footer class="w-full py-6 text-center text-dark text-sm bg-transparent mt-auto">
-        © {{ new Date().getFullYear() }} Pactum Suite. Desarrollado por David Quintana Valdés
+        © {{ new Date().getFullYear() }} Pactum Suite. Desarrollado por David Quintana Valdés, Soporte: +53 56242671 
       </footer>
     </div>
   </div>

@@ -80,14 +80,28 @@
             />
           </div>
         </div>
-        <div class="flex justify-end mt-4 gap-2">
+        <div class="flex justify-end mt-4 gap-2 flex-wrap">
           <button @click="handleSearch"
             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
             Buscar
           </button>
           <button @click="exportToExcel"
-            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
             Exportar a Excel
+          </button>
+          <button @click="exportToExcelWithContratos"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
+            Exportar a Excel con Contratos
           </button>
         </div>
       </div>
@@ -490,18 +504,212 @@ const handleSearch = async () => {
   }
 };
 
-function exportToExcel() {
-  const exportData = trabajadoresData.value.map(item => ({
-    'Nombre': item.nombre,
-    'Cargo': item.cargo,
-    'Carnet de Identidad': item.carnet_identidad,
-    'Teléfono': item.num_telefono,
-    'Función': item.funcion,
-    'Contratos Asociados': item.contratosAsociados
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Trabajadores');
-  XLSX.writeFile(workbook, 'trabajadores.xlsx');
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+
+    // Datos para el body
+    const bodyData = {
+      nombre: searchNombre.value,
+      cargo: searchCargo.value,
+      carnet_identidad: searchCarnet.value,
+      id_entidad: searchEntidad.value,
+      funcion: searchFuncion.value
+    };
+
+    const response = await fetch(`${config.public.backendHost}/trabajadorAutorizado/filter/1/${totalTrabajadores.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = data.data.map(item => ({
+      'Nombre': item.nombre,
+      'Cargo': item.cargo,
+      'Carnet de Identidad': item.carnet_identidad,
+      'Teléfono': item.num_telefono,
+      'Función': item.funcion,
+      'Contratos Asociados': Array.isArray(item.contratos) ? item.contratos.length : 0
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Trabajadores');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `trabajadores_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+async function exportToExcelWithContratos() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+
+    // Datos para el body
+    const bodyData = {
+      nombre: searchNombre.value,
+      cargo: searchCargo.value,
+      carnet_identidad: searchCarnet.value,
+      id_entidad: searchEntidad.value,
+      funcion: searchFuncion.value
+    };
+
+    const response = await fetch(`${config.public.backendHost}/trabajadorAutorizado/filter/1/${totalTrabajadores.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Crear filas para cada trabajador y sus contratos
+    const exportData = [];
+    data.data.forEach(trabajador => {
+      if (Array.isArray(trabajador.contratos)) {
+        trabajador.contratos.forEach(contrato => {
+          exportData.push({
+            'Nombre Trabajador': trabajador.nombre,
+            'Cargo Trabajador': trabajador.cargo,
+            'Función Trabajador': trabajador.funcion,
+            'Carnet Identidad': trabajador.carnet_identidad,
+            'Teléfono Trabajador': trabajador.num_telefono,
+            'ID Contrato': contrato.id_contrato,
+            'Número Consecutivo': contrato.num_consecutivo,
+            'Fecha Inicio': contrato.fecha_inicio ? new Date(contrato.fecha_inicio).toLocaleDateString('es-ES') : '',
+            'Fecha Fin': contrato.fecha_fin ? new Date(contrato.fecha_fin).toLocaleDateString('es-ES') : '',
+            'Clasificación': contrato.clasificacion,
+            'Nota': contrato.nota,
+            'Cliente/Proveedor': contrato.ClienteOProveedor,
+            'Vigencia Facturas (Días)': contrato.vigenciaFacturasDias,
+            'Tipo Contrato': contrato.tipoContrato ? contrato.tipoContrato.nombre : '',
+            'Entidad': contrato.entidad ? contrato.entidad.nombre : '',
+            'Dirección Entidad': contrato.entidad ? contrato.entidad.direccion : '',
+            'Teléfono Entidad': contrato.entidad ? contrato.entidad.telefono : '',
+            'Email Entidad': contrato.entidad ? contrato.entidad.email : '',
+            'Organismo': contrato.entidad ? contrato.entidad.organismo : '',
+            'Tipo Entidad': contrato.entidad ? contrato.entidad.tipo_entidad : '',
+            'Código REO': contrato.entidad ? contrato.entidad.codigo_reo : '',
+            'Código NIT': contrato.entidad ? contrato.entidad.codigo_nit : ''
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Trabajadores con Contratos');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `trabajadores_contratos_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel con contratos:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
 }
 </script> 

@@ -1,4 +1,7 @@
-- [x] Agregar función calcularTotal en el script de FacturaModal.vue
-- [x] Modificar encabezado de servicios: cambiar a 6 columnas y agregar "Total"
-- [x] Modificar bucle de servicios: cambiar a 6 columnas, agregar campo Total, actualizar clases de inputs para bordes redondeados
-- [x] Verificar que productos tenga el Total correcto y estilos consistentes
+- [x] Modificar el método exportToExcel en pages/entidades.vue para mostrar un mensaje de consulta de datos usando MessageBanner
+- [x] Realizar una llamada a la API /entidad/filter/1/${totalItems} con los filtros actuales y limit=totalItems
+- [x] Mapear los datos de la respuesta a las columnas requeridas en el orden especificado
+- [x] Exportar los datos a Excel y limpiar el banner
+- [x] Agregar la fecha actual al nombre del archivo Excel
+- [x] Agregar un segundo botón "Exportar a Excel con Contratos"
+- [x] Crear función exportToExcelWithContracts que exporte entidades con sus contratos

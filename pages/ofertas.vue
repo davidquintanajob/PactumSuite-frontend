@@ -588,18 +588,113 @@ const handleOfertaSubmit = async (formData) => {
   }
 };
 
-function exportToExcel() {
-  const exportData = itemsData.value.map(item => ({
-    'Fecha Inicio': item.fecha_inicio,
-    'Fecha Fin': item.fecha_fin,
-    'Entidad': item.contrato?.entidad?.nombre,
-    'Num Contrato': item.contrato?.num_consecutivo,
-    'Usuario': item.usuario?.nombre,
-    'Estado': item.estado ? item.estado.charAt(0).toUpperCase() + item.estado.slice(1) : ''
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Ofertas');
-  XLSX.writeFile(workbook, 'ofertas.xlsx');
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      descripcion: '',
+      fecha_inicio: fecha_inicio.value,
+      fecha_fin: fecha_fin.value,
+      id_contrato: id_contrato.value,
+      id_usuario: id_usuario.value,
+      page: 1,
+      limit: 10000 // Asumiendo que no hay más de 10,000 ofertas
+    };
+
+    const response = await fetch(`${config.public.backendHost}/oferta/filterOfertas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Formatear fechas a 'YYYY-MM-DD'
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      return dateStr.split('T')[0];
+    };
+    const ofertasFormateadas = (data || []).map(oferta => ({
+      ...oferta,
+      fecha_inicio: formatDate(oferta.fecha_inicio),
+      fecha_fin: formatDate(oferta.fecha_fin),
+      contrato: oferta.contrato ? {
+        ...oferta.contrato,
+        fecha_inicio: formatDate(oferta.contrato.fecha_inicio),
+        fecha_fin: formatDate(oferta.contrato.fecha_fin)
+      } : oferta.contrato,
+    }));
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = ofertasFormateadas.map(item => ({
+      'Fecha Inicio': item.fecha_inicio,
+      'Fecha Fin': item.fecha_fin,
+      'Entidad': item.contrato?.entidad?.nombre || '',
+      'Num Contrato': item.contrato?.num_consecutivo || '',
+      'Usuario': item.usuario?.nombre || '',
+      'Estado': item.estado ? item.estado.charAt(0).toUpperCase() + item.estado.slice(1) : ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Ofertas');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `ofertas_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
 }
 </script>

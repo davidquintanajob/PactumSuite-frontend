@@ -81,14 +81,26 @@
             />
           </div>
         </div>
-        <div class="flex justify-end mt-4 gap-2">
+        <div class="flex justify-end mt-4 gap-2 flex-wrap">
           <button @click="handleSearch"
             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
             Buscar
           </button>
           <button @click="exportToExcel"
-            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
             Exportar a Excel
+          </button>
+          <button @click="exportToExcelWithVentasCompras"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Exportar Ventas y Compras
           </button>
         </div>
       </div>
@@ -440,17 +452,225 @@ const handleSearch = async () => {
   }
 };
 
-function exportToExcel() {
-  const exportData = productosData.value.map(item => ({
-    'Código': item.codigo,
-    'Nombre': item.nombre,
-    'Unidad de Medida': item.unidadMedida,
-    'Precio': item.precio,
-    'Nota': item.nota
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
-  XLSX.writeFile(workbook, 'productos.xlsx');
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+
+    // Datos para el body
+    const bodyData = {
+      codigo: searchCodigo.value,
+      nombre: searchNombre.value,
+      precio: {
+        min: searchPrecioMin.value ? Number(searchPrecioMin.value) : undefined,
+        max: searchPrecioMax.value ? Number(searchPrecioMax.value) : undefined
+      },
+      nota: searchNota.value
+    };
+    // Remove undefined values
+    if (!bodyData.precio.min && !bodyData.precio.max) delete bodyData.precio;
+    else {
+      if (!bodyData.precio.min) delete bodyData.precio.min;
+      if (!bodyData.precio.max) delete bodyData.precio.max;
+    }
+
+    const response = await fetch(`${config.public.backendHost}/Producto/filterProductos/1/${totalProductos.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = data.data.map(item => ({
+      'Código': item.codigo,
+      'Nombre': item.nombre,
+      'Unidad de Medida': item.unidadMedida,
+      'Precio': Number(item.precio).toFixed(2),
+      'Nota': item.nota
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `productos_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+async function exportToExcelWithVentasCompras() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+
+    // Datos para el body
+    const bodyData = {
+      codigo: searchCodigo.value,
+      nombre: searchNombre.value,
+      precio: {
+        min: searchPrecioMin.value ? Number(searchPrecioMin.value) : undefined,
+        max: searchPrecioMax.value ? Number(searchPrecioMax.value) : undefined
+      },
+      nota: searchNota.value
+    };
+    // Remove undefined values
+    if (!bodyData.precio.min && !bodyData.precio.max) delete bodyData.precio;
+    else {
+      if (!bodyData.precio.min) delete bodyData.precio.min;
+      if (!bodyData.precio.max) delete bodyData.precio.max;
+    }
+
+    const response = await fetch(`${config.public.backendHost}/Producto/filterProductos/1/${totalProductos.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Crear filas para cada producto y sus facturas
+    const exportData = [];
+    data.data.forEach(producto => {
+      if (Array.isArray(producto.facturaProductos)) {
+        producto.facturaProductos.forEach(facturaProducto => {
+          exportData.push({
+            'Código Producto': producto.codigo,
+            'Nombre Producto': producto.nombre,
+            'Unidad Medida Producto': producto.unidadMedida,
+            'Precio Producto': Number(producto.precio).toFixed(2),
+            'Costo Producto': Number(producto.costo).toFixed(2),
+            'Tipo Producto': producto.tipoProducto,
+            'Existencia Producto': producto.cantidadExistencia,
+            'Nota Producto': producto.nota,
+            'Número Consecutivo Factura': facturaProducto.factura.num_consecutivo,
+            'Fecha Factura': facturaProducto.factura.fecha ? new Date(facturaProducto.factura.fecha).toLocaleDateString('es-ES') : '',
+            'Estado Factura': facturaProducto.factura.estado,
+            'Nota Factura': facturaProducto.factura.nota,
+            'Cantidad': Number(facturaProducto.cantidad).toFixed(2),
+            'Precio Venta': Number(facturaProducto.precioVenta).toFixed(2),
+            'Número Consecutivo Contrato': facturaProducto.factura.contrato.num_consecutivo,
+            'Fecha Inicio Contrato': facturaProducto.factura.contrato.fecha_inicio ? new Date(facturaProducto.factura.contrato.fecha_inicio).toLocaleDateString('es-ES') : '',
+            'Fecha Fin Contrato': facturaProducto.factura.contrato.fecha_fin ? new Date(facturaProducto.factura.contrato.fecha_fin).toLocaleDateString('es-ES') : '',
+            'Nota Contrato': facturaProducto.factura.contrato.nota,
+            'Cliente/Proveedor': facturaProducto.factura.contrato.ClienteOProveedor,
+            'Vigencia Facturas (Días)': facturaProducto.factura.contrato.vigenciaFacturasDias
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos con Ventas y Compras');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `productos_ventas_compras_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel con ventas y compras:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
 }
 </script>

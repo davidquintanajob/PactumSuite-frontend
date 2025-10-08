@@ -75,14 +75,37 @@
             />
           </div>
         </div>
-        <div class="flex justify-end mt-4 gap-2">
+        <div class="flex justify-end mt-4 gap-2 flex-wrap">
           <button @click="handleSearch"
             class="px-6 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
             Buscar
           </button>
           <button @click="exportToExcel"
-            class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors">
+            class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
             Exportar a Excel
+          </button>
+          <button @click="exportToExcelWithFacturas"
+            class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
+            Exportar a Excel con Facturas
+          </button>
+          <button @click="exportToExcelWithFichaCliente"
+            class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
+            Exportar a Excel con Ficha de Cliente
           </button>
         </div>
       </div>
@@ -578,20 +601,329 @@ const handleContratoSubmit = async (formData) => {
   }
 };
 
-function exportToExcel() {
-  const exportData = itemsData.value.map(item => ({
-    'Num. Consecutivo': item.num_consecutivo,
-    'Fecha Inicio': item.fecha_inicio,
-    'Fecha Fin': item.fecha_fin,
-    'Clasificación': item.clasificacion,
-    'Cliente o Proveedor': item.clienteOProveedor,
-    'Entidad': item.entidad?.nombre,
-    'Tipo de Contrato': item.tipoContrato?.nombre
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Contratos');
-  XLSX.writeFile(workbook, 'contratos.xlsx');
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      nombre_entidad: nombre_entidad.value || undefined,
+      id_tipo_contrato: id_tipo_contrato.value || undefined,
+      fecha_inicio: fecha_inicio.value || undefined,
+      fecha_fin: fecha_fin.value || undefined,
+      num_consecutivo: num_consecutivo.value || undefined,
+      ClienteOProveedor: clienteOProveedor.value || undefined
+    };
+
+    const response = await fetch(`${config.public.backendHost}/contrato/filter/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = data.data.map(item => ({
+      'Num. Consecutivo': item.num_consecutivo,
+      'Fecha Inicio': item.fecha_inicio ? item.fecha_inicio.substring(0, 10) : '',
+      'Fecha Fin': item.fecha_fin ? item.fecha_fin.substring(0, 10) : '',
+      'Clasificación': item.clasificacion,
+      'Cliente o Proveedor': item.ClienteOProveedor,
+      'Entidad': item.entidad?.nombre,
+      'Tipo de Contrato': item.tipoContrato?.nombre,
+      'Vigencia de pago/cobro facturas (días)': item.vigenciaFacturasDias,
+      'Nota': item.nota
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Contratos');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `contratos_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+// Función para exportar a Excel con facturas
+async function exportToExcelWithFacturas() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      nombre_entidad: nombre_entidad.value || undefined,
+      id_tipo_contrato: id_tipo_contrato.value || undefined,
+      fecha_inicio: fecha_inicio.value || undefined,
+      fecha_fin: fecha_fin.value || undefined,
+      num_consecutivo: num_consecutivo.value || undefined,
+      ClienteOProveedor: clienteOProveedor.value || undefined
+    };
+
+    const response = await fetch(`${config.public.backendHost}/contrato/filter/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas, incluyendo facturas
+    const exportData = [];
+    data.data.forEach(contrato => {
+      if (contrato.facturas && contrato.facturas.length > 0) {
+        contrato.facturas.forEach(factura => {
+          exportData.push({
+            // Campos de contrato
+            'Num. Consecutivo Contrato': contrato.num_consecutivo,
+            'Fecha Inicio Contrato': contrato.fecha_inicio ? contrato.fecha_inicio.substring(0, 10) : '',
+            'Fecha Fin Contrato': contrato.fecha_fin ? contrato.fecha_fin.substring(0, 10) : '',
+            'Clasificación Contrato': contrato.clasificacion,
+            'Cliente o Proveedor': contrato.ClienteOProveedor,
+            'Entidad': contrato.entidad?.nombre,
+            'Tipo de Contrato': contrato.tipoContrato?.nombre,
+            'Vigencia Facturas (días)': contrato.vigenciaFacturasDias,
+            'Nota Contrato': contrato.nota,
+            // Campos de factura
+            'Num. Consecutivo Factura': factura.num_consecutivo,
+            'Fecha Factura': factura.fecha ? factura.fecha.substring(0, 10) : '',
+            'Estado Factura': factura.estado,
+            'Nota Factura': factura.nota,
+            'Suma Servicios': Number(factura.suma_servicios).toFixed(2),
+            'Suma Productos': Number(factura.suma_productos).toFixed(2),
+            'Suma General': Number(factura.suma_general).toFixed(2)
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Contratos con Facturas');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `contratos_facturas_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel con facturas:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+// Función para exportar a Excel con ficha de cliente
+async function exportToExcelWithFichaCliente() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    // Datos para el body
+    const bodyData = {
+      nombre_entidad: nombre_entidad.value || undefined,
+      id_tipo_contrato: id_tipo_contrato.value || undefined,
+      fecha_inicio: fecha_inicio.value || undefined,
+      fecha_fin: fecha_fin.value || undefined,
+      num_consecutivo: num_consecutivo.value || undefined,
+      ClienteOProveedor: clienteOProveedor.value || undefined
+    };
+
+    const response = await fetch(`${config.public.backendHost}/contrato/filter/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Crear filas para cada trabajador autorizado
+    const exportData = [];
+    data.data.forEach(contrato => {
+      if (contrato.trabajadoresAutorizados && contrato.trabajadoresAutorizados.length > 0) {
+        contrato.trabajadoresAutorizados.forEach(trabajador => {
+          exportData.push({
+            // Información del contrato
+            'Num. Consecutivo Contrato': contrato.num_consecutivo,
+            'Fecha Inicio Contrato': contrato.fecha_inicio ? contrato.fecha_inicio.substring(0, 10) : '',
+            'Fecha Fin Contrato': contrato.fecha_fin ? contrato.fecha_fin.substring(0, 10) : '',
+            'Clasificación Contrato': contrato.clasificacion,
+            'Cliente o Proveedor': contrato.ClienteOProveedor,
+            'Tipo de Contrato': contrato.tipoContrato?.nombre,
+            'Vigencia Facturas (días)': contrato.vigenciaFacturasDias,
+            'Nota Contrato': contrato.nota,
+            // Información de la entidad
+            'Nombre Entidad': contrato.entidad?.nombre,
+            'Dirección Entidad': contrato.entidad?.direccion,
+            'Teléfono Entidad': contrato.entidad?.telefono,
+            'Email Entidad': contrato.entidad?.email,
+            'Tipo de Entidad': contrato.entidad?.tipo_entidad,
+            // Información del trabajador autorizado
+            'Nombre Trabajador': trabajador.nombre,
+            'Cargo Trabajador': trabajador.cargo,
+            'Función Trabajador': trabajador.funcion,
+            'Carnet Identidad': trabajador.carnet_identidad,
+            'Teléfono Trabajador': trabajador.num_telefono
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Ficha de Clientes');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `ficha_clientes_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar ficha de cliente:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
 }
 
 onMounted(() => {

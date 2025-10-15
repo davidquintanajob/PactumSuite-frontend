@@ -1,0 +1,2 @@
+"id_usuario","nombre","nombre_usuario","carnet_identidad","cargo","contrasenna","rol","activo","createdAt","updatedAt"
+1,"Jorge","jorge","00000000000","Director","$2b$10$mxFNw5quQOPa3xbEz.tVeuMR1Y5M7COzz6iLherMmD.z.Ms4BdWeK","Administrador",True,"2025-10-09 12:02:57.188-04","2025-10-09 12:02:57.188-04"

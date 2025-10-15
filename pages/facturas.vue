@@ -207,6 +207,11 @@
       :usuarios="[]"
       @submit="handleFacturaSubmit"
     />
+    <!-- Modal de PDF de Factura -->
+    <FacturaPDFModal
+      v-model="showPDFModal"
+      :factura="selectedFactura"
+    />
   </div>
 </template>
 
@@ -220,6 +225,7 @@ import ConfirmBanner from '@/components/ConfirmBanner.vue';
 import SelectSearch from '@/components/SelectSearch.vue';
 import SelectSearchAPI from '@/components/SelectSearchAPI.vue';
 import FacturaModal from '../components/FacturaModal.vue';
+import FacturaPDFModal from '../components/FacturaPDFModal.vue';
 import * as XLSX from 'xlsx';
 
 // Variables de filtros
@@ -249,6 +255,7 @@ const entidadCompleta = ref(null);
 
 // Modal y estado
 const showModal = ref(false);
+const showPDFModal = ref(false);
 const selectedFactura = ref({});
 const isEditing = ref(false);
 const isViewing = ref(false);
@@ -337,18 +344,18 @@ const facturasActions = [
     buttonClass: 'px-3 py-1 bg-accent text-neutral rounded-md hover:bg-accent/90'
   },
   {
-    name: 'Eliminar',
+    name: 'Ver en PDF',
     icon: {
       render() {
-        return h('svg', { xmlns: 'http://www.w3.org/2000/svg', class: 'h-5 w-5 text-red-500', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
-          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z' }),
-          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M19 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2v2' })
+        return h('svg', { xmlns: 'http://www.w3.org/2000/svg', class: 'h-5 w-5 text-white', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' }),
+          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M9 9h6m-6 4h6m-6 4h6' })
         ]);
       }
     },
-    handler: (item) => eliminarFactura(item),
+    handler: (item) => abrirModalPDFFactura(item),
     iconOnly: false,
-    buttonClass: 'px-3 py-1 bg-danger text-neutral rounded-md hover:bg-danger/90'
+    buttonClass: 'px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600'
   }
 ];
 
@@ -507,6 +514,11 @@ function abrirModalFactura(item, modo) {
 
 function nuevaFactura() {
   abrirModalFactura({}, 'crear');
+}
+
+function abrirModalPDFFactura(item) {
+  selectedFactura.value = { ...item };
+  showPDFModal.value = true;
 }
 
 function eliminarFactura(item) {

@@ -24,6 +24,7 @@
       <header class="flex flex-col items-center justify-center py-12">
         <img src="/logo.png" alt="Logo" class="h-40 w-40 shadow-md mb-4" />
         <h1 class="text-4xl md:text-5xl font-extrabold text-primary/80 mb-2 text-center drop-shadow">Pactum Suite</h1>
+        <h1 class="text-2xl md:text-3xl text-primary/80 mb-2 text-center drop-shadow">Beta Vercion (1.0)</h1>
         <p class="text-lg md:text-xl text-dark/70 text-center max-w-2xl">La plataforma integral para la gestión eficiente de contratos, entidades, facturas y productos de tu organización orientado al comercio.</p>
       </header>
 

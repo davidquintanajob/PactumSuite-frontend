@@ -1,0 +1,1 @@
+CreateObject("WScript.Shell").Run "node .output/server/index.mjs", 0, False

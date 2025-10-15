@@ -1,0 +1,32 @@
+@echo off
+echo ========================================
+echo    INSTALADOR OFFLINE PACTUM FRONTEND
+echo ========================================
+echo.
+
+echo 1. COPIANDO APLICACION...
+xcopy "App" "C:\Program Files\PactumFrontEnd\" /E /I /Y
+
+echo 2. CREANDO CARPETA PM2...
+mkdir "%USERPROFILE%\.pm2" 2>nul
+
+echo 3. COPIANDO CONFIGURACION PM2...
+xcopy "PM2-Config\*" "%USERPROFILE%\.pm2\" /Y
+
+echo 4. INSTALANDO PM2 OFFLINE...
+cd /d "PM2-Offline"
+npm install -g pm2-5.3.0.tgz
+
+echo.
+echo ========================================
+echo    INSTALACION OFFLINE COMPLETADA!
+echo ========================================
+echo.
+echo PROXIMOS PASOS MANUALES:
+echo 1. Abrir CMD como Administrador
+echo 2. cd "C:\Program Files\PactumFrontEnd"
+echo 3. pm2 start ecosystem.config.cjs
+echo.
+echo La aplicacion estara en: http://localhost:3000
+echo.
+pause

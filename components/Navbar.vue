@@ -26,7 +26,7 @@
                         PACTUM
                     </h1>
                     <div class="relative flex flex-col items-center justify-center">
-                        <a @click="toggleUserMenu"
+                        <a @click="handlePerfilClick"
                             class="w-12 h-12 rounded-full overflow-hidden border-2 border-white hover:bg-accent hover:border-accent transition flex items-center justify-center cursor-pointer">
                             <img src="/usuario.png" alt="Usuario"
                                 class="w-3/4 h-3/4 object-cover transition duration-300 hover:opacity-75 mix-blend-screen invert hover:invert(0)" />

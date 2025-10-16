@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
-    <SeoMeta title="Ofertas - Contract Manager" description="Consulta y administra ofertas asociadas a contratos." canonical="/ofertas" />
+    <SeoMeta title="Ofertas - Pactum" description="Consulta y administra ofertas asociadas a contratos." canonical="/ofertas" />
     <Navbar />
     <div v-if="errorBanner"
       class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4 pointer-events-none">

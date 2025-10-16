@@ -1,0 +1,478 @@
+<template>
+  <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
+    <SeoMeta title="Entradas - Pactum" description="Lista y gestión de entradas de productos." canonical="/entradas" />
+    <Navbar />
+    <div v-if="errorBanner"
+      class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4 pointer-events-none">
+      <MessageBanner :title="errorBanner.title" :description="errorBanner.description" :type="errorBanner.type"
+        @close="errorBanner = null" class="pointer-events-auto" />
+    </div>
+    <!-- Barra de búsqueda y filtros -->
+    <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Producto por código</label>
+            <SelectSearchAPI
+              v-model="id_producto"
+              endpoint="/Producto/filterProductos/1/10"
+              method="POST"
+              search-key="codigo"
+              label-key="codigo"
+              value-key="id_producto"
+              placeholder="Buscar producto por código..."
+            />
+          </div>
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Contrato por número consecutivo</label>
+            <SelectSearch
+              v-model="id_contrato"
+              :options="contratos"
+              labelKey="displayLabel"
+              valueKey="id_contrato"
+              placeholder="Buscar contrato..."
+            />
+          </div>
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad mínima</label>
+            <input type="number" v-model.number="cantidad_min" placeholder="Cantidad min..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad máxima</label>
+            <input type="number" v-model.number="cantidad_max" placeholder="Cantidad max..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Costo mínimo</label>
+            <input type="number" v-model.number="costo_min" step="0.01" placeholder="Costo min..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Costo máximo</label>
+            <input type="number" v-model.number="costo_max" step="0.01" placeholder="Costo max..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+          <div class="w-full md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
+            <input type="text" v-model="nota" placeholder="Nota..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha desde</label>
+            <input type="date" v-model="fecha_desde"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+          <div class="w-full">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha hasta</label>
+            <input type="date" v-model="fecha_hasta"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
+              @keyup.enter="handleSearch">
+          </div>
+        </div>
+        <div class="flex justify-end mt-4 gap-2 flex-wrap">
+          <button @click="handleSearch"
+            class="px-6 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
+            Buscar
+          </button>
+          <button @click="exportToExcel"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
+            Exportar a Excel
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Tabla de entradas -->
+    <div class="w-[95%] mx-auto px-4 py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Entradas</h2>
+      </div>
+      <DataTable :columns="entradasColumns" :items="itemsData" :actions="entradasActions" :total-items="totalItems"
+        :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
+        @page-change="handlePageChange" @row-click="handleRowClick" />
+    </div>
+    <!-- Modal de Entrada (solo visualización) -->
+    <EntradaModal v-model="showModal" :entrada="selectedEntrada" :is-viewing="isViewing" />
+  </div>
+</template>
+
+<script setup>
+import { ref, h, onMounted } from 'vue';
+import Navbar from "@/components/Navbar.vue";
+import SeoMeta from '@/components/SeoMeta.vue';
+import DataTable from "@/components/DataTable.vue";
+import MessageBanner from '@/components/MessageBanner.vue';
+import SelectSearch from '@/components/SelectSearch.vue';
+import SelectSearchAPI from '@/components/SelectSearchAPI.vue';
+import EntradaModal from '../components/EntradaModal.vue';
+import * as XLSX from 'xlsx';
+
+// Variables de filtros
+const id_producto = ref('');
+const id_contrato = ref('');
+const cantidad_min = ref('');
+const cantidad_max = ref('');
+const costo_min = ref('');
+const costo_max = ref('');
+const nota = ref('');
+const fecha_desde = ref('');
+const fecha_hasta = ref('');
+
+// Variables para contratos
+const contratos = ref([]);
+
+// Modal y estado
+const showModal = ref(false);
+const selectedEntrada = ref({});
+const isViewing = ref(false);
+
+// Columnas de la tabla
+const entradasColumns = [
+  { key: 'producto.nombre', label: 'Producto' },
+  { key: 'producto.codigo', label: 'Código' },
+  { key: 'producto.unidadMedida', label: 'Unidad' },
+  { key: 'cantidadEntrada', label: 'Cantidad' },
+  {
+    key: 'producto.precio',
+    label: 'Precio Unitario',
+    cellRenderer: (value) => {
+      if (value == null || value === '') return '';
+      const num = parseFloat(value);
+      if (isNaN(num)) return value;
+      return `<span class="px-2 py-1 rounded text-sm">${num.toFixed(2)}</span>`;
+    }
+  },
+  {
+    key: 'total',
+    label: 'Total',
+    cellRenderer: (value, item) => {
+      const cantidad = parseFloat(item.cantidadEntrada || 0);
+      const precio = parseFloat(item.producto?.precio || 0);
+      const total = cantidad * precio;
+      return `<span class="px-2 py-1 rounded text-sm font-semibold">${total.toFixed(2)}</span>`;
+    }
+  },
+  {
+    key: 'fecha',
+    label: 'Fecha',
+    cellRenderer: (value) => {
+      if (!value) return '';
+      const fechaFormateada = value.substring(0, 10);
+      return `<span class="px-2 py-1 rounded text-sm">${fechaFormateada}</span>`;
+    }
+  }
+];
+
+// Paginación y datos
+const currentPage = ref(1);
+const totalItems = ref(0);
+const isLoading = ref(false);
+const itemsPorPage = ref(20);
+const itemsData = ref([]);
+
+// Banners de error
+const errorBanner = ref(null);
+
+const config = useRuntimeConfig();
+
+// Acciones de la tabla (solo ver)
+const entradasActions = [
+  {
+    name: 'Ver',
+    icon: {
+      render() {
+        return h('svg', { xmlns: 'http://www.w3.org/2000/svg', class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z' }),
+          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' })
+        ]);
+      }
+    },
+    handler: (item) => abrirModalEntrada(item, 'ver'),
+    iconOnly: false,
+    buttonClass: 'px-3 py-1 bg-primary text-neutral rounded-md hover:bg-primary/90'
+  }
+];
+
+// Función para cargar contratos
+async function fetchContratos() {
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${config.public.backendHost}/contrato`, {
+      method: 'GET',
+      headers: {
+        'Authorization': token,
+        'Accept': 'application/json'
+      }
+    });
+    const data = await res.json();
+    contratos.value = Array.isArray(data.data) ? data.data.map(contrato => ({
+      ...contrato,
+      displayLabel: `${contrato.num_consecutivo} - ${contrato.entidad?.nombre || ''} - ${contrato.tipoContrato?.nombre || ''}`
+    })) : [];
+  } catch (error) {
+    console.error('Error al cargar contratos:', error);
+  }
+}
+
+// Función principal para obtener entradas
+async function fetchEntradas(page = 1) {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    navigateTo('/');
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    const body = {
+      nota: nota.value || '',
+      fecha_desde: fecha_desde.value || '',
+      fecha_hasta: fecha_hasta.value || ''
+    };
+
+    // Solo incluir id_producto si el usuario ha seleccionado un valor
+    if (id_producto.value !== '') {
+      body.id_producto = id_producto.value;
+    }
+
+    // Solo incluir id_contrato si el usuario ha seleccionado un valor
+    if (id_contrato.value !== '') {
+      body.id_contrato = id_contrato.value;
+    }
+
+    // Solo incluir cantidadEntrada si el usuario ha digitado algún valor
+    if (cantidad_min.value !== '' || cantidad_max.value !== '') {
+      body.cantidadEntrada = {
+        min: cantidad_min.value || 0,
+        max: cantidad_max.value || 0
+      };
+    }
+
+    // Solo incluir costo si el usuario ha digitado algún valor
+    if (costo_min.value !== '' || costo_max.value !== '') {
+      body.costo = {
+        min: costo_min.value || 0,
+        max: costo_max.value || 0
+      };
+    }
+    console.log(body);
+    
+    const res = await fetch(`${config.public.backendHost}/entrada/filterEntradas/${page}/${itemsPorPage.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      body: JSON.stringify(body)
+    });
+
+    // Manejo de errores: 401 = sesión expirada (redirigir), 403 = permisos denegados
+    if (res.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (res.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await res.json();
+    itemsData.value = data.data || [];
+    totalItems.value = data.pagination?.total || 0;
+    currentPage.value = data.pagination?.currentPage || 1;
+  } catch (err) {
+    errorBanner.value = { title: 'Error', description: 'No se pudieron cargar las entradas', type: 'error' };
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Funciones del modal
+function abrirModalEntrada(item, modo) {
+  selectedEntrada.value = { ...item };
+  isViewing.value = modo === 'ver';
+  showModal.value = true;
+}
+
+// Abrir modal al hacer click en la fila
+function handleRowClick(item) {
+  abrirModalEntrada(item, 'ver');
+}
+
+// Funciones de búsqueda y paginación
+const handleSearch = async () => {
+  try {
+    isLoading.value = true;
+    await fetchEntradas(1);
+  } catch (error) {
+    console.error('Error al buscar entradas:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+function handlePageChange(page) {
+  fetchEntradas(page);
+}
+
+// Función de exportación
+async function exportToExcel() {
+  // Mostrar mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+
+    const bodyData = {
+      nota: nota.value || '',
+      fecha_desde: fecha_desde.value || '',
+      fecha_hasta: fecha_hasta.value || ''
+    };
+
+    // Solo incluir id_producto si el usuario ha seleccionado un valor
+    if (id_producto.value !== '') {
+      bodyData.id_producto = id_producto.value;
+    }
+
+    // Solo incluir id_contrato si el usuario ha seleccionado un valor
+    if (id_contrato.value !== '') {
+      bodyData.id_contrato = id_contrato.value;
+    }
+
+    // Solo incluir cantidadEntrada si el usuario ha digitado algún valor
+    if (cantidad_min.value !== '' || cantidad_max.value !== '') {
+      bodyData.cantidadEntrada = {
+        min: cantidad_min.value || 0,
+        max: cantidad_max.value || 0
+      };
+    }
+
+    // Solo incluir costo si el usuario ha digitado algún valor
+    if (costo_min.value !== '' || costo_max.value !== '') {
+      bodyData.costo = {
+        min: costo_min.value || 0,
+        max: costo_max.value || 0
+      };
+    }
+
+    const response = await fetch(`${config.public.backendHost}/entrada/filterEntradas/1/${totalItems.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    // Manejo de errores
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapear los datos a las columnas requeridas en el orden especificado
+    const exportData = data.data.map(item => ({
+      'Producto': item.producto?.nombre || '',
+      'Código': item.producto?.codigo || '',
+      'Unidad': item.producto?.unidadMedida || '',
+      'Cantidad': item.cantidadEntrada,
+      'Precio Unitario': Number(item.producto?.precio || 0).toFixed(2),
+      'Total': (Number(item.cantidadEntrada) * Number(item.producto?.precio || 0)).toFixed(2),
+      'Fecha': item.fecha ? item.fecha.substring(0, 10) : '',
+      'Nota': item.nota || '',
+      'Contrato': item.contrato?.num_consecutivo || '',
+      'Entidad': item.contrato?.entidad?.nombre || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Entradas');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `entradas_${date}.xlsx`);
+
+    // Limpiar el banner después de la exportación
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar a Excel:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+// Cargar datos al montar el componente
+onMounted(async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    navigateTo('/');
+    return;
+  }
+
+  await fetchContratos();
+  await fetchEntradas();
+});
+</script>

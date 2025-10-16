@@ -1,15 +1,11 @@
-# TODO List for cargarDatosCSV.js Modifications
+# TODO: Cambiar configuración SEO de "Contract Manager" a "Pactum"
 
-- [x] Add import for csv-writer
-- [x] Declare successfulClientes array
-- [x] Add flag successful in contract loop
-- [x] Set successful = false on filter or contract errors
-- [x] Push to successfulClientes if successful
-- [x] Filter clientes to remove successful and rewrite clientes.csv
-- [x] Add loop to iterate over clientes again for contracts
-- [x] Call /entidad/filter/1/1 to get id_entidad
-- [x] Create two contracts per cliente using /contrato/createContrato with dynamic dates (now to now+1 year)
-- [x] Process invoices from facturas.csv
-- [x] Call /contrato/filter/1/1 to get id_contrato for each invoice
-- [x] Create invoices with /Factura/CreateFactura, building services array from CSV columns
-- [x] Remove successfully processed invoices from facturas.csv
+## Tareas Pendientes
+
+- [ ] Actualizar nuxt.config.ts: Cambiar title, titleTemplate, og:site_name y JSON-LD de "Contract Manager" a "Pactum"
+- [ ] Actualizar components/SeoMeta.vue: Cambiar default title de "Contract Manager" a "Pactum"
+- [ ] Actualizar pages/index.vue: Cambiar SeoMeta title de "Inicio - Contract Manager" a "Inicio - Pactum"
+- [ ] Actualizar pages/servicios.vue: Cambiar SeoMeta title de "Servicios - Contract Manager" a "Servicios - Pactum"
+- [ ] Actualizar pages/ofertas.vue: Cambiar SeoMeta title de "Ofertas - Contract Manager" a "Ofertas - Pactum"
+- [ ] Verificar y actualizar otras páginas: Revisar todas las páginas en /pages para asegurar que tengan SeoMeta con títulos correctos
+- [ ] Verificar configuración SEO completa: Asegurar que todas las páginas nuevas tengan configuración SEO adecuada

@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta
-      title="Inicio - Contract Manager"
+      title="Inicio - Pactum"
       description="La plataforma integral para la gestión eficiente de contratos, entidades y trabajadores."
       canonical="/"
     />

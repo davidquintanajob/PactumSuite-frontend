@@ -12,7 +12,7 @@ const props = defineProps({
 const siteUrl = useRuntimeConfig().public.siteUrl || 'http://localhost:3000';
 
 useHead({
-  title: props.title || 'Contract Manager',
+  title: props.title || 'Pactum',
   meta: [
     props.description ? { name: 'description', content: props.description } : null,
     props.image ? { property: 'og:image', content: (props.image.startsWith('http') ? props.image : siteUrl + props.image) } : null,
@@ -22,7 +22,7 @@ useHead({
     props.twitterCard ? { name: 'twitter:card', content: props.twitterCard } : null
   ].filter(Boolean),
   link: props.canonical ? [{ rel: 'canonical', href: props.canonical }] : [] ,
-  script: props.jsonld ? [{ type: 'application/ld+json', children: props.jsonld }] : []
+  script: props.jsonld ? [{ type: 'application/ld+json', innerHTML: props.jsonld }] : []
 });
 </script>
 

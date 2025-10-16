@@ -17,8 +17,8 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'Contract Manager',
-      titleTemplate: '%s | Contract Manager',
+      title: 'Pactum',
+      titleTemplate: '%s | Pactum',
       htmlAttrs: { lang: 'es' },
       meta: [
         { charset: 'utf-8' },
@@ -28,7 +28,7 @@ export default defineNuxtConfig({
         { name: 'keywords', content: 'contratos, gestión, trabajadores, entidades, ofertas' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'es_ES' },
-        { property: 'og:site_name', content: 'Contract Manager' },
+        { property: 'og:site_name', content: 'Pactum' },
         { name: 'twitter:card', content: 'summary_large_image' }
       ],
       link: [
@@ -39,10 +39,10 @@ export default defineNuxtConfig({
         // Basic Organization JSON-LD for SEO
         {
           type: 'application/ld+json',
-          children: JSON.stringify({
+          innerHTML: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Organization",
-            "name": "Contract Manager",
+            "name": "Pactum",
             "url": process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
             "logo": (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/logo.png'
           })

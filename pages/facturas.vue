@@ -1,8 +1,8 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta
-      title="Facturas - Contract Manager"
-      description="Lista y gestión de facturas en Contract Manager. Filtra, exporta y administra facturas." 
+      title="Facturas - Pactum"
+      description="Lista y gestión de facturas en Pactum. Filtra, exporta y administra facturas."
       canonical="/facturas"
     />
     <Navbar />

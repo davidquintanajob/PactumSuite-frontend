@@ -153,6 +153,7 @@ const options = [
     { label: "Contratos", src: "/contrato.png", link: "/contratos" },
     { label: "Trabajadores", src: "/lanza-libre.png", link: "/trabajadores" },
     { label: "Productos", src: "/Productos.png", link: "/productos" },
+    { label: "Entradas", src: "/Productos.png", link: "/entradas" },
     { label: "Facturas", src: "/Facturas.png", link: "/facturas" },
     { label: "Servicios", src: "/Servicios.png", link: "/servicios" },
     { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos" },

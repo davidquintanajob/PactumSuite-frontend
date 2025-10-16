@@ -7,78 +7,57 @@
       <MessageBanner :title="errorBanner.title" :description="errorBanner.description" :type="errorBanner.type"
         @close="errorBanner = null" class="pointer-events-auto" />
     </div>
-    <div v-if="showConfirmBanner" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[10000] w-full max-w-md px-4 pointer-events-auto">
-      <ConfirmBanner
-        :title="'¿Estás seguro que deseas eliminar este producto?'"
-        :description="'Esta acción no se puede deshacer.'"
-        type="warning"
-        @confirm="confirmDeleteProducto"
-        @close="showConfirmBanner = false"
-      />
+    <div v-if="showConfirmBanner"
+      class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[10000] w-full max-w-md px-4 pointer-events-auto">
+      <ConfirmBanner :title="'¿Estás seguro que deseas eliminar este producto?'"
+        :description="'Esta acción no se puede deshacer.'" type="warning" @confirm="confirmDeleteProducto"
+        @close="showConfirmBanner = false" />
     </div>
     <!-- Barra de búsqueda y filtros -->
-    <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
+    <div v-if="activeTab === 'productos'" class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
       <div class="bg-white rounded-lg shadow-md p-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4 md:mb-2">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por código</label>
             <div class="relative">
-              <input
-                type="text"
-                v-model="searchCodigo"
-                placeholder="Ingrese el código..."
+              <input type="text" v-model="searchCodigo" placeholder="Ingrese el código..."
                 class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
-                @keyup.enter="handleSearch"
-              >
+                @keyup.enter="handleSearch">
               <div class="absolute left-3 top-2.5">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Buscar por nombre</label>
-            <input
-              type="text"
-              v-model="searchNombre"
-              placeholder="Ingrese el nombre..."
+            <input type="text" v-model="searchNombre" placeholder="Ingrese el nombre..."
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
-              @keyup.enter="handleSearch"
-            />
+              @keyup.enter="handleSearch" />
           </div>
           <div class="flex space-x-2">
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">Precio mínimo</label>
-              <input
-                type="number"
-                v-model="searchPrecioMin"
-                placeholder="Precio min..."
+              <input type="number" v-model="searchPrecioMin" placeholder="Precio min..."
                 class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                @keyup.enter="handleSearch"
-              />
+                @keyup.enter="handleSearch" />
             </div>
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">Precio máximo</label>
-              <input
-                type="number"
-                v-model="searchPrecioMax"
-                placeholder="Precio max..."
+              <input type="number" v-model="searchPrecioMax" placeholder="Precio max..."
                 class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                @keyup.enter="handleSearch"
-              />
+                @keyup.enter="handleSearch" />
             </div>
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
-            <input
-              type="text"
-              v-model="searchNota"
-              placeholder="Nota..."
+            <input type="text" v-model="searchNota" placeholder="Nota..."
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              @keyup.enter="handleSearch"
-            />
+              @keyup.enter="handleSearch" />
           </div>
         </div>
         <div class="flex justify-end mt-4 gap-2 flex-wrap">
@@ -88,27 +67,39 @@
           </button>
           <button @click="exportToExcel"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
             </svg>
             Exportar a Excel
           </button>
           <button @click="exportToExcelWithVentasCompras"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             Exportar Ventas y Compras
           </button>
         </div>
       </div>
-    </div>
-    <!-- Tabla de Productos -->
-    <div class="w-[95%] mx-auto px-4 py-4">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Productos</h2>
+      <div class="flex justify-between items-center mb-4 mt-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button @click="activeTab = 'productos'"
+            :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'productos' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
+            Productos
+          </button>
+          <button @click="activeTab = 'ventas'"
+            :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'ventas' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
+            Ventas
+          </button>
+        </div>
         <button @click="nuevaProducto"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
@@ -118,25 +109,110 @@
           Nuevo Producto
         </button>
       </div>
-      <DataTable
-        :columns="productosColumns"
-        :items="productosData"
-        :actions="productosActions"
-        :total-items="totalProductos"
-        :items-per-page="itemsPorPage"
-        :current-page="currentPage"
-        :is-loading="isLoading"
-        @page-change="handlePageChange"
-        @row-click="handleRowClick"
-      />
+    </div>
+    <!-- Tabla de Productos -->
+    <div v-if="activeTab === 'productos'" class="w-[95%] mx-auto px-4 py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Productos</h2>
+      </div>
+      <DataTable :columns="productosColumns" :items="productosData" :actions="productosActions"
+        :total-items="totalProductos" :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
+        @page-change="handlePageChange" @row-click="handleRowClick" />
+    </div>
+    <!-- Sección de Ventas -->
+    <div v-if="activeTab === 'ventas'" class="w-[95%] mx-auto px-4 py-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Ventas</h2>
+      </div>
+
+      <!-- Filtros Ventas (placeholders sin conexión) -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Código de producto</label>
+            <input type="text" v-model="ventasSearchCodigo" placeholder="Código..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de producto</label>
+            <input type="text" v-model="ventasSearchNombre" placeholder="Nombre..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">N° consecutivo factura</label>
+            <input type="number" v-model="ventasSearchConsecutivo" placeholder="Consecutivo..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Estado factura</label>
+            <select v-model="ventasSearchEstado"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="">Todos</option>
+              <option value="Facturado">Facturado</option>
+              <option value="No Facturado">No Facturado</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha desde</label>
+            <input type="date" v-model="ventasSearchDesde"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha hasta</label>
+            <input type="date" v-model="ventasSearchHasta"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Precio mínimo</label>
+            <input type="number" v-model="ventasPrecioMin" placeholder="Mínimo..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Precio máximo</label>
+            <input type="number" v-model="ventasPrecioMax" placeholder="Máximo..."
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 flex-wrap">
+          <button @click="exportVentasToExcel"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h2v2H7v-2zM11 12h2v2h-2v-2zM15 12h2v2h-2v-2z" />
+            </svg>
+            Exportar a Excel
+          </button>
+          <button @click="handleVentasSearch"
+            class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">Buscar</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button @click="activeTab = 'productos'"
+          :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'productos' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
+          Productos
+        </button>
+        <button @click="activeTab = 'ventas'"
+          :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'ventas' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
+          Ventas
+        </button>
+      </div>
+      <!-- Tabla Ventas -->
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Ventas</h2>
+      </div>
+      <DataTable :columns="ventasColumns" :items="ventasData" :actions="ventasActions" :total-items="totalVentas"
+        :items-per-page="itemsPorPage" :current-page="ventasCurrentPage" :is-loading="ventasLoading"
+        @page-change="handleVentasPageChange" />
     </div>
     <!-- Modal de Producto -->
-    <ProductoModal v-model="showModal" :producto="selectedProducto" :is-editing="isEditing" :is-viewing="isViewing" @submit="handleSubmit" />
+    <ProductoModal v-model="showModal" :producto="selectedProducto" :is-editing="isEditing" :is-viewing="isViewing"
+      @submit="handleSubmit" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, h } from 'vue';
+import { ref, onMounted, h, watch } from 'vue';
 import SeoMeta from '@/components/SeoMeta.vue';
 import Navbar from '@/components/Navbar.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -165,6 +241,173 @@ const isViewing = ref(false);
 const errorBanner = ref(null);
 const showConfirmBanner = ref(false);
 const productoAEliminar = ref(null);
+const activeTab = ref('productos');
+
+// Estado para Ventas
+const ventasData = ref([]);
+const totalVentas = ref(0);
+const ventasCurrentPage = ref(1);
+const ventasLoading = ref(false);
+
+// Filtros (placeholders, sin conexión por ahora)
+const ventasSearchCodigo = ref('');
+const ventasSearchNombre = ref('');
+const ventasSearchConsecutivo = ref('');
+const ventasSearchEstado = ref('');
+const ventasSearchDesde = ref('');
+const ventasSearchHasta = ref('');
+const ventasPrecioMin = ref('');
+const ventasPrecioMax = ref('');
+
+const ventasColumns = [
+  { key: 'productoCodigo', label: 'Código' },
+  { key: 'productoNombre', label: 'Nombre' },
+  { key: 'productoUnidad', label: 'Unidad de Medida' },
+  { key: 'cantidad', label: 'Cantidad' },
+  { key: 'precioVenta', label: 'Precio Venta' },
+  { key: 'total', label: 'Total (Cant x Precio)' },
+  { key: 'numConsecutivo', label: 'N° Consecutivo factura' },
+  { key: 'fechaFactura', label: 'Fecha' }
+];
+
+const ventasActions = [];
+
+let lastVentasBody = {};
+
+const buildVentasBody = () => {
+  const body = {
+    nombre_producto: ventasSearchNombre.value || undefined,
+    codigo_producto: ventasSearchCodigo.value || undefined,
+    num_consecutivo: ventasSearchConsecutivo.value ? Number(ventasSearchConsecutivo.value) : undefined,
+    estado: ventasSearchEstado.value || undefined,
+    fecha_desde: ventasSearchDesde.value ? new Date(ventasSearchDesde.value).toISOString() : undefined,
+    fecha_hasta: ventasSearchHasta.value ? new Date(ventasSearchHasta.value).toISOString() : undefined,
+    precio_min: ventasPrecioMin.value !== '' ? Number(ventasPrecioMin.value) : undefined,
+    precio_max: ventasPrecioMax.value !== '' ? Number(ventasPrecioMax.value) : undefined
+  };
+  // eliminar undefined
+  Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
+  return body;
+};
+
+const fetchVentas = async (page = ventasCurrentPage.value, limit = itemsPorPage.value) => {
+  ventasLoading.value = true;
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+    const res = await fetch(`${config.public.backendHost}/FacturaProducto/filterFacturaProductos/${page}/${limit}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(lastVentasBody)
+    });
+
+    const data = await res.json();
+    const items = Array.isArray(data.data) ? data.data : [];
+    ventasData.value = items.map(fp => ({
+      id: fp.id_factura_producto,
+      productoCodigo: fp.producto?.codigo ?? '',
+      productoNombre: fp.producto?.nombre ?? '',
+      productoUnidad: fp.producto?.unidadMedida ?? '',
+      cantidad: Number(fp.cantidad ?? 0).toFixed(2),
+      precioVenta: Number(fp.precioVenta ?? 0).toFixed(2),
+      total: (Number(fp.cantidad ?? 0) * Number(fp.precioVenta ?? 0)).toFixed(2),
+      numConsecutivo: fp.factura?.num_consecutivo ?? '',
+      fechaFactura: fp.factura?.fecha ? new Date(fp.factura.fecha).toLocaleDateString('es-ES') : ''
+    }));
+    totalVentas.value = data.pagination?.total || 0;
+  } catch (error) {
+    ventasData.value = [];
+    totalVentas.value = 0;
+  } finally {
+    ventasLoading.value = false;
+  }
+};
+
+const handleVentasPageChange = (page) => {
+  ventasCurrentPage.value = page;
+  fetchVentas(page);
+};
+
+const handleVentasSearch = async () => {
+  // Construir body según filtros, omitiendo campos vacíos
+  lastVentasBody = buildVentasBody();
+  ventasCurrentPage.value = 1;
+  await fetchVentas(1, itemsPorPage.value);
+};
+
+watch(activeTab, async (val) => {
+  if (val === 'ventas' && ventasData.value.length === 0) {
+    await fetchVentas(ventasCurrentPage.value, itemsPorPage.value);
+  }
+});
+
+async function exportVentasToExcel() {
+  // Mensaje de consulta de datos
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos de ventas, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+
+    // Asegurar que el body refleje los filtros actuales
+    const bodyData = buildVentasBody();
+
+    // Obtener todos los registros segun filtros actuales
+    const response = await fetch(`${config.public.backendHost}/FacturaProducto/filterFacturaProductos/1/${totalVentas.value || 100000}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos de ventas.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+    const rows = (Array.isArray(data.data) ? data.data : []).map(fp => ({
+      'Código Producto': fp.producto?.codigo ?? '',
+      'Nombre Producto': fp.producto?.nombre ?? '',
+      'Unidad de Medida': fp.producto?.unidadMedida ?? '',
+      'Cantidad': Number(fp.cantidad ?? 0).toFixed(2),
+      'Precio Venta': Number(fp.precioVenta ?? 0).toFixed(2),
+      'Total (Cant x Precio)': (Number(fp.cantidad ?? 0) * Number(fp.precioVenta ?? 0)).toFixed(2),
+      'N° Consecutivo factura': fp.factura?.num_consecutivo ?? '',
+      'Fecha Factura': fp.factura?.fecha ? new Date(fp.factura.fecha).toLocaleDateString('es-ES') : ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventas');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `ventas_${date}.xlsx`);
+
+    errorBanner.value = null;
+  } catch (error) {
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos de ventas.',
+      type: 'error'
+    };
+  }
+}
 
 const productosColumns = [
   { key: 'codigo', label: 'Código' },
@@ -283,7 +526,7 @@ const handleSubmit = async (producto) => {
   try {
     const token = localStorage.getItem('token');
     const config = useRuntimeConfig();
-    
+
     const url = isEditing.value
       ? `${config.public.backendHost}/Producto/updateProducto/${selectedProducto.value.id_producto}`
       : `${config.public.backendHost}/Producto/createProducto`;
@@ -297,7 +540,7 @@ const handleSubmit = async (producto) => {
       },
       body: JSON.stringify(producto)
     });
-    
+
     // Manejo de errores: 401 = sesión expirada (redirigir), 403 = permisos denegados
     if (response.status === 401) {
       errorBanner.value = {

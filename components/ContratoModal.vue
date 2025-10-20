@@ -331,8 +331,8 @@ const handleSubmit = async () => {
     errorMsg.value = 'Debe ingresar el Número Consecutivo.';
     return;
   }
-  // Validate num_consecutivo format according to new rules
-  const val = formData.value.num_consecutivo;
+  // Validate num_consecutivo format according to new rules (coerce to string)
+  const val = String(formData.value.num_consecutivo ?? '');
   const slashIndex = val.indexOf('/');
   if (slashIndex === -1) {
     // No slash, must be only numbers

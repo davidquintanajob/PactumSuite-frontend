@@ -2,13 +2,13 @@
   <Modal :show="modelValue" @close="$emit('update:modelValue', false)" size="2xl">
     <template #title>
       <h3 class="text-lg font-semibold text-gray-900">
-        Detalles de la Entrada
+        {{ isViewing ? 'Detalles de la Entrada' : (isEditing ? 'Editar Entrada' : 'Nueva Entrada') }}
       </h3>
     </template>
 
     <template #content>
-      <div class="space-y-6">
-        <!-- Información del Producto -->
+      <div v-if="isViewing" class="space-y-6">
+        <!-- Vista sólo lectura (igual a anterior) -->
         <div class="bg-gray-50 rounded-lg p-4">
           <h4 class="text-md font-medium text-gray-900 mb-3">Información del Producto</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -42,8 +42,6 @@
             <p class="mt-1 text-sm text-gray-900">{{ entrada.producto?.nota || 'Sin nota' }}</p>
           </div>
         </div>
-
-        <!-- Información de la Entrada -->
         <div class="bg-blue-50 rounded-lg p-4">
           <h4 class="text-md font-medium text-gray-900 mb-3">Información de la Entrada</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -71,7 +69,7 @@
         </div>
 
         <!-- Información del Contrato -->
-        <div class="bg-green-50 rounded-lg p-4">
+        <div v-if="entrada.contrato" class="bg-green-50 rounded-lg p-4">
           <h4 class="text-md font-medium text-gray-900 mb-3">Información del Contrato</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -79,16 +77,8 @@
               <p class="mt-1 text-sm text-gray-900">{{ entrada.contrato?.num_consecutivo || 'N/A' }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Tipo de Contrato</label>
-              <p class="mt-1 text-sm text-gray-900">{{ entrada.contrato?.tipoContrato?.nombre || 'N/A' }}</p>
-            </div>
-            <div>
               <label class="block text-sm font-medium text-gray-700">Cliente o Proveedor</label>
               <p class="mt-1 text-sm text-gray-900">{{ entrada.contrato?.ClienteOProveedor || 'N/A' }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Entidad</label>
-              <p class="mt-1 text-sm text-gray-900">{{ entrada.contrato?.entidad?.nombre || 'N/A' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Fecha Inicio</label>
@@ -106,7 +96,7 @@
         </div>
 
         <!-- Información de Factura (si existe) -->
-        <div v-if="entrada.id_factura" class="bg-yellow-50 rounded-lg p-4">
+        <div v-if="entrada.factura" class="bg-yellow-50 rounded-lg p-4">
           <h4 class="text-md font-medium text-gray-900 mb-3">Información de Factura</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -143,16 +133,83 @@
           </div>
         </div>
       </div>
+
+      <div v-else class="space-y-6">
+        <!-- Formulario de creación/edición -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+            <SelectSearchAPI
+              v-model="form.id_producto"
+              endpoint="/Producto/filterProductos/1/10"
+              method="POST"
+              search-key="nombre"
+              label-key="nombre"
+              value-key="id_producto"
+              placeholder="Buscar producto..."
+              @producto-seleccionado="onProductoSeleccionado"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+            <input type="date" v-model="form.fecha" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+            <input type="number" v-model.number="form.cantidadEntrada" min="0" step="0.01" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
+            <input type="text" v-model="form.nota" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Nota..." />
+          </div>
+        </div>
+
+        <!-- Info del producto seleccionada -->
+        <div v-if="selectedProducto" class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-md font-medium text-gray-900 mb-3">Información del Producto</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <div class="text-sm text-gray-600">Existencia</div>
+              <div class="text-sm font-semibold">{{ selectedProducto.cantidadExistencia }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Unidad</div>
+              <div class="text-sm font-semibold">{{ selectedProducto.unidadMedida }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Tipo</div>
+              <div class="text-sm font-semibold">{{ selectedProducto.tipoProducto }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Precio</div>
+              <div class="text-sm font-semibold">{{ Number(selectedProducto.precio || 0).toFixed(2) }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Costo</div>
+              <div class="text-sm font-semibold">{{ Number(selectedProducto.costo || 0).toFixed(2) }}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <div class="text-sm text-gray-600">Precio × Cantidad</div>
+              <div class="text-sm font-semibold">{{ (Number(selectedProducto.precio || 0) * Number(form.cantidadEntrada || 0)).toFixed(2) }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Costo × Cantidad</div>
+              <div class="text-sm font-semibold">{{ (Number(selectedProducto.costo || 0) * Number(form.cantidadEntrada || 0)).toFixed(2) }}</div>
+            </div>
+          </div>
+        </div>
+        <div v-if="errorList.length" class="bg-red-50 border border-red-200 text-red-700 p-3 rounded">
+          <div v-for="(e, idx) in errorList" :key="idx">{{ e }}</div>
+        </div>
+      </div>
     </template>
 
     <template #footer>
-      <div class="flex justify-end">
-        <button
-          @click="$emit('update:modelValue', false)"
-          class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-        >
-          Cerrar
-        </button>
+      <div class="flex justify-end gap-2">
+        <button v-if="!isViewing" @click="onSubmit" class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90">{{ isEditing ? 'Guardar' : 'Crear' }}</button>
+        <button @click="$emit('update:modelValue', false)" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cerrar</button>
       </div>
     </template>
   </Modal>
@@ -160,21 +217,54 @@
 
 <script setup>
 import Modal from '@/components/Modal.vue';
+import SelectSearchAPI from '@/components/SelectSearchAPI.vue';
 
-defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false
-  },
-  entrada: {
-    type: Object,
-    default: () => ({})
-  },
-  isViewing: {
-    type: Boolean,
-    default: true
-  }
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+  entrada: { type: Object, default: () => ({}) },
+  isViewing: { type: Boolean, default: true },
+  isEditing: { type: Boolean, default: false }
 });
 
-defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'submit']);
+
+const form = reactive({ id_producto: null, cantidadEntrada: null, nota: '', fecha: '' });
+const selectedProducto = ref(null);
+const errorList = ref([]);
+
+watch(() => props.entrada, (val) => {
+  if (val && Object.keys(val).length) {
+    form.id_producto = val.id_producto || val.producto?.id_producto || null;
+    form.cantidadEntrada = val.cantidadEntrada || null;
+    form.nota = val.nota || '';
+    form.fecha = val.fecha ? val.fecha.substring(0,10) : '';
+    selectedProducto.value = val.producto || null;
+  } else {
+    form.id_producto = null;
+    form.cantidadEntrada = null;
+    form.nota = '';
+    form.fecha = '';
+    selectedProducto.value = null;
+  }
+}, { immediate: true });
+
+function onProductoSeleccionado(producto) {
+  selectedProducto.value = producto;
+}
+
+async function onSubmit() {
+  errorList.value = [];
+  if (!form.id_producto) errorList.value.push('Debe seleccionar un producto');
+  if (form.cantidadEntrada == null || Number(form.cantidadEntrada) <= 0) errorList.value.push('La cantidad debe ser mayor que 0');
+  if (!form.fecha) errorList.value.push('Debe seleccionar una fecha');
+  if (errorList.value.length) return;
+  emit('submit', { id_producto: form.id_producto, cantidadEntrada: Number(form.cantidadEntrada), nota: form.nota, fecha: form.fecha });
+}
+
+watch(() => props.modelValue, (open) => {
+  if (!open) {
+    errorList.value = [];
+  }
+});
 </script>
+

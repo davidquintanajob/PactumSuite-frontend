@@ -7,6 +7,16 @@
       <MessageBanner :title="errorBanner.title" :description="errorBanner.description" :type="errorBanner.type"
         @close="errorBanner = null" class="pointer-events-auto" />
     </div>
+    <div v-if="showConfirmBanner" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[10000] w-full max-w-md px-4 pointer-events-auto">
+      <ConfirmBanner
+        :title="'¿Estás seguro que deseas eliminar esta entrada?'"
+        :description="'Esta acción no se puede deshacer.'"
+        :icon="deleteIcon"
+        type="warning"
+        @confirm="confirmDeleteEntrada"
+        @close="showConfirmBanner = false"
+      />
+    </div>
     <!-- Barra de búsqueda y filtros -->
     <div class="w-[95%] mx-auto px-4 py-4 md:py-4 mt-20 md:mt-0">
       <div class="bg-white rounded-lg shadow-md p-4">
@@ -101,13 +111,26 @@
     <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Entradas</h2>
+        <button @click="nuevaEntrada"
+          class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nueva Entrada
+        </button>
       </div>
       <DataTable :columns="entradasColumns" :items="itemsData" :actions="entradasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
-    <!-- Modal de Entrada (solo visualización) -->
-    <EntradaModal v-model="showModal" :entrada="selectedEntrada" :is-viewing="isViewing" />
+    <!-- Modal de Entrada -->
+    <EntradaModal
+      v-model="showModal"
+      :entrada="selectedEntrada"
+      :is-editing="isEditing"
+      :is-viewing="isViewing"
+      @submit="handleEntradaSubmit"
+    />
   </div>
 </template>
 
@@ -119,6 +142,7 @@ import DataTable from "@/components/DataTable.vue";
 import MessageBanner from '@/components/MessageBanner.vue';
 import SelectSearch from '@/components/SelectSearch.vue';
 import SelectSearchAPI from '@/components/SelectSearchAPI.vue';
+import ConfirmBanner from '@/components/ConfirmBanner.vue';
 import EntradaModal from '../components/EntradaModal.vue';
 import * as XLSX from 'xlsx';
 
@@ -140,6 +164,11 @@ const contratos = ref([]);
 const showModal = ref(false);
 const selectedEntrada = ref({});
 const isViewing = ref(false);
+const isEditing = ref(false);
+
+// Variables para confirmación de eliminación
+const showConfirmBanner = ref(false);
+const entradaAEliminar = ref(null);
 
 // Columnas de la tabla
 const entradasColumns = [
@@ -191,20 +220,37 @@ const errorBanner = ref(null);
 const config = useRuntimeConfig();
 
 // Acciones de la tabla (solo ver)
+const deleteIcon = {
+  render() {
+    return h('svg', { xmlns: 'http://www.w3.org/2000/svg', class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' })
+    ]);
+  }
+};
+
 const entradasActions = [
+  
   {
-    name: 'Ver',
+    name: 'Editar',
     icon: {
       render() {
         return h('svg', { xmlns: 'http://www.w3.org/2000/svg', class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
-          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z' }),
-          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' })
+          h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' })
         ]);
       }
     },
-    handler: (item) => abrirModalEntrada(item, 'ver'),
+    handler: (item) => abrirModalEntrada(item, 'editar'),
     iconOnly: false,
-    buttonClass: 'px-3 py-1 bg-primary text-neutral rounded-md hover:bg-primary/90'
+    buttonClass: 'px-3 py-1 bg-accent text-neutral rounded-md hover:bg-accent/90',
+    visible: (item) => (!item.id_contrato && !item.id_factura) || (item.id_contrato === '' && item.id_factura === '')
+  },
+  {
+    name: 'Eliminar',
+    icon: deleteIcon,
+    handler: (item) => eliminarEntrada(item),
+    iconOnly: false,
+    buttonClass: 'px-3 py-1 bg-danger text-neutral rounded-md hover:bg-danger/90',
+    visible: (item) => (!item.id_contrato && !item.id_factura) || (item.id_contrato === '' && item.id_factura === '')
   }
 ];
 
@@ -318,14 +364,126 @@ async function fetchEntradas(page = 1) {
 
 // Funciones del modal
 function abrirModalEntrada(item, modo) {
+  // Verificar si la entrada fue creada por una factura o contrato
+  if (item.id_factura || item.id_contrato) {
+    errorBanner.value = {
+      title: 'Entrada no editable',
+      description: 'Esta entrada fue creada por una factura de un proveedor, solo es editable desde la factura misma',
+      type: 'warning'
+    };
+    return;
+  }
+  
   selectedEntrada.value = { ...item };
   isViewing.value = modo === 'ver';
+  isEditing.value = modo === 'editar';
   showModal.value = true;
 }
 
 // Abrir modal al hacer click en la fila
 function handleRowClick(item) {
   abrirModalEntrada(item, 'ver');
+}
+
+function nuevaEntrada() {
+  selectedEntrada.value = null;
+  isViewing.value = false;
+  isEditing.value = false;
+  showModal.value = true;
+}
+
+function eliminarEntrada(item) {
+  // Verificar si la entrada fue creada por una factura o contrato
+  if (item.id_factura || item.id_contrato) {
+    errorBanner.value = {
+      title: 'Entrada no eliminable',
+      description: 'Esta entrada fue creada por una factura de un proveedor, solo es eliminable desde la factura misma',
+      type: 'warning'
+    };
+    return;
+  }
+
+  // Mostrar banner de confirmación
+  entradaAEliminar.value = item;
+  showConfirmBanner.value = true;
+}
+
+async function confirmDeleteEntrada() {
+  if (!entradaAEliminar.value) return;
+  
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${config.public.backendHost}/Entrada/deleteEntrada/${entradaAEliminar.value.id_entrada}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': token, 'Accept': 'application/json' }
+    });
+    
+    if (res.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (res.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.errors) ? err.errors.join('\n') : (err.error || 'No se pudo eliminar la entrada');
+      errorBanner.value = { title: 'Error', description: msg, type: 'error' };
+      return;
+    }
+    
+    errorBanner.value = { title: 'Entrada eliminada', description: 'Se eliminó correctamente', type: 'success' };
+    await fetchEntradas(currentPage.value);
+  } catch (e) {
+    errorBanner.value = { title: 'Error', description: 'Ocurrió un error al eliminar', type: 'error' };
+  } finally {
+    showConfirmBanner.value = false;
+    entradaAEliminar.value = null;
+  }
+}
+
+async function handleEntradaSubmit(payload) {
+  try {
+    const token = localStorage.getItem('token');
+    const url = isEditing.value && selectedEntrada.value?.id_entrada
+      ? `${config.public.backendHost}/Entrada/updateEntrada/${selectedEntrada.value.id_entrada}`
+      : `${config.public.backendHost}/Entrada/createEntrada`;
+    const method = isEditing.value ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': token, 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.errors) ? err.errors.join('\n') : (err.error || 'Error en la operación');
+      errorBanner.value = { title: 'Error', description: msg, type: 'error' };
+      return;
+    }
+    errorBanner.value = { title: isEditing.value ? 'Entrada actualizada' : 'Entrada creada', description: 'Operación exitosa', type: 'success' };
+    showModal.value = false;
+    selectedEntrada.value = {};
+    isEditing.value = false;
+    isViewing.value = false;
+    await fetchEntradas(currentPage.value);
+  } catch (e) {
+    errorBanner.value = { title: 'Error', description: 'Ocurrió un error al guardar', type: 'error' };
+  }
 }
 
 // Funciones de búsqueda y paginación

@@ -68,15 +68,17 @@
                 </a>
 
                 <!-- Botones de navegación (Escritorio) -->
-                <div class="hidden md:flex flex-col space-y-4 w-full md:mt-4">
-                    <a v-for="(option, index) in options" :key="index"
-                        href="#"
-                        class="text-white flex items-center px-4 py-3 rounded-lg border border-white transition group hover:bg-accent hover:text-black"
-                        @click.prevent="handleNavigation(option.link); isNavCollapsed = true">
-                        <img :src="option.src" alt=""
-                            class="w-6 h-6 mr-2 invert group-hover:invert-0 transition-all duration-300">
-                        <span class="text-[15px]">{{ option.label }}</span>
-                    </a>
+                <div class="hidden md:flex flex-col w-full md:mt-4 overflow-y-auto" style="max-height: calc(100vh - 200px);">
+                    <div class="flex flex-col space-y-6 w-full">
+                        <a v-for="(option, index) in options" :key="index"
+                            href="#"
+                            class="text-white flex items-center px-4 py-3 rounded-lg border border-white transition group hover:bg-accent hover:text-black"
+                            @click.prevent="handleNavigation(option.link); isNavCollapsed = true">
+                            <img :src="option.src" alt=""
+                                class="w-6 h-6 mr-2 invert group-hover:invert-0 transition-all duration-300">
+                            <span class="text-[15px]">{{ option.label }}</span>
+                        </a>
+                    </div>
                 </div>
 
 
@@ -154,10 +156,10 @@ const options = [
     { label: "Trabajadores", src: "/lanza-libre.png", link: "/trabajadores" },
     { label: "Productos", src: "/Productos.png", link: "/productos" },
     { label: "Entradas", src: "/agregar-producto.png", link: "/entradas" },
+    { label: "Salidas", src: "/carritoDeCompras.png", link: "/salidas" },
     { label: "Facturas", src: "/Facturas.png", link: "/facturas" },
     { label: "Servicios", src: "/Servicios.png", link: "/servicios" },
     { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos" },
-    { label: "Ofertas", src: "/oferta-de-trabajo.png", link: "/ofertas" },
     { label: "Usuario", src: "/usuarios.png", link: "/usuarios" }
 ];
 
@@ -326,5 +328,25 @@ onUnmounted(() => {
     85% { transform: translateX(-3px) rotate(-3deg) scale(1.01); }
     100% { transform: translateX(0) rotate(0deg) scale(1); }
 }
+
+/* Estilos para la barra de scroll */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #C5B6DA; /* secondary */
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #5A4E9D; /* primary */
+    border-radius: 10px;
+    border: 2px solid #C5B6DA; /* secondary */
+}
+
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #5A4E9D #C5B6DA;
+}
 </style>
- 

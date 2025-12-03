@@ -34,7 +34,7 @@
       </div>
 
       <!-- Contenido de la Factura -->
-      <div id="factura-content" class="bg-white p-6 max-w-full mx-auto border border-black" style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.4;">
+      <div id="factura-content" class="bg-white p-6 max-w-full mx-auto" style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.4;">
         <!-- Encabezado de la Factura -->
         <div class="text-center mb-4">
   <h1 class="text-lx font-bold mb-2" style="color: #dc2626; font-size: 40px; letter-spacing: 1px;">FACTURA</h1>
@@ -73,7 +73,7 @@
                 <p><strong>Identificación Fiscal (RC-05):</strong> {{ getVendorData('identificacion_fiscal') }}</p>
               </div>
               <div class="flex items-center justify-between">
-                <p><strong>Cuenta Bancaria:</strong> {{ getVendorData('cuenta_bancaria') }}</p>
+                <p><strong>Cuenta Bancaria:</strong> {{ getVendorData('cuenta_bancaria').replace(/-/g, '') }}</p>
               </div>
               <div class="flex items-center justify-between">
                 <p><strong>Agencia Bancaria:</strong> {{ getVendorData('agencia_bancaria') }}</p>
@@ -101,7 +101,7 @@
                 <p><strong>Dirección:</strong> {{ factura.contrato?.entidad?.direccion || '_________________' }}</p>
               </div>
               <div class="flex items-center justify-between">
-                <p><strong>Cuenta Bancaria:</strong> {{ factura.contrato?.entidad?.cuenta_bancaria || '_________________' }}</p>
+                <p><strong>Cuenta Bancaria:</strong> {{ (factura.contrato?.entidad?.cuenta_bancaria || '_________________').replace(/-/g, '') }}</p>
               </div>
             </div>
           </div>

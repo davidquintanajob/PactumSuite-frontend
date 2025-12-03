@@ -364,8 +364,8 @@ async function fetchEntradas(page = 1) {
 
 // Funciones del modal
 function abrirModalEntrada(item, modo) {
-  // Verificar si la entrada fue creada por una factura o contrato
-  if (item.id_factura || item.id_contrato) {
+  // Verificar si la entrada fue creada por una factura o contrato y se intenta editar
+  if ((item.id_factura || item.id_contrato) && modo !== 'ver') {
     errorBanner.value = {
       title: 'Entrada no editable',
       description: 'Esta entrada fue creada por una factura de un proveedor, solo es editable desde la factura misma',

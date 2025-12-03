@@ -69,7 +69,7 @@
 
                 <!-- Botones de navegación (Escritorio) -->
                 <div class="hidden md:flex flex-col w-full md:mt-4 overflow-y-auto" style="max-height: calc(100vh - 200px);">
-                    <div class="flex flex-col space-y-6 w-full">
+                    <div class="flex flex-col space-y-4 w-full">
                         <a v-for="(option, index) in options" :key="index"
                             href="#"
                             class="text-white flex items-center px-4 py-3 rounded-lg border border-white transition group hover:bg-accent hover:text-black"
@@ -159,6 +159,7 @@ const options = [
     { label: "Salidas", src: "/carritoDeCompras.png", link: "/salidas" },
     { label: "Facturas", src: "/Facturas.png", link: "/facturas" },
     { label: "Servicios", src: "/Servicios.png", link: "/servicios" },
+    { label: "Ofertas", src: "/Ofertas.png", link: "/ofertas" },
     { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos" },
     { label: "Usuario", src: "/usuarios.png", link: "/usuarios" }
 ];
@@ -335,18 +336,18 @@ onUnmounted(() => {
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-    background: #C5B6DA; /* secondary */
+    background: rgba(197, 182, 218, 0.6); /* secondary with 60% opacity */
     border-radius: 10px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-    background-color: #5A4E9D; /* primary */
+    background-color: rgba(90, 78, 157, 0.6); /* primary with 60% opacity */
     border-radius: 10px;
-    border: 2px solid #C5B6DA; /* secondary */
+    border: 2px solid rgba(197, 182, 218, 0.6); /* secondary with 60% opacity */
 }
 
 .overflow-y-auto {
     scrollbar-width: thin;
-    scrollbar-color: #5A4E9D #C5B6DA;
+    scrollbar-color: rgba(90, 78, 157, 0.6) rgba(197, 182, 218, 0.6);
 }
 </style>

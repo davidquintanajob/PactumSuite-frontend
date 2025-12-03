@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     public: {
       backendHost: process.env.NUXT_PUBLIC_BACKEND_HOST,
       // Base site URL used for canonical links and JSON-LD. Set NUXT_PUBLIC_SITE_URL in env.
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://31.170.165.44:5356'
     }
   },
   app: {
@@ -33,7 +33,7 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/logo.png' },
-        { rel: 'canonical', href: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000' }
+        { rel: 'canonical', href: process.env.NUXT_PUBLIC_SITE_URL || 'http://31.170.165.44:5356' }
       ],
       script: [
         // Basic Organization JSON-LD for SEO
@@ -43,8 +43,8 @@ export default defineNuxtConfig({
             "@context": "https://schema.org",
             "@type": "Organization",
             "name": "Pactum",
-            "url": process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-            "logo": (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000') + '/logo.png'
+            "url": process.env.NUXT_PUBLIC_SITE_URL || 'http://31.170.165.44:5356',
+            "logo": (process.env.NUXT_PUBLIC_SITE_URL || 'http://31.170.165.44:5356') + '/logo.png'
           })
         }
       ]

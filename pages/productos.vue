@@ -618,7 +618,8 @@ const handleSubmit = async (producto) => {
 };
 
 const nuevaProducto = () => {
-  selectedProducto.value = null;
+  // Asegurar que el modal abra siempre en blanco creando un objeto vacío
+  selectedProducto.value = {};
   isEditing.value = false;
   isViewing.value = false;
   showModal.value = true;

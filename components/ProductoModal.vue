@@ -47,6 +47,13 @@
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ingrese el precio" />
           </div>
+          <!-- Costo -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
+            <input v-model="formData.costo" type="number" step="0.01" required :readonly="isViewing" :disabled="isViewing || isLoading"
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ingrese el costo" />
+          </div>
           <!-- Unidad de Medida -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Unidad de Medida</label>
@@ -58,8 +65,8 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Producto</label>
             <input v-model="formData.tipoProducto" type="text" required :readonly="isViewing" :disabled="isViewing || isLoading"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ingrese el tipo de producto" />
+            class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ingrese el tipo de producto" />
           </div>
           <!-- Cantidad en Existencia -->
           <div v-if="isEditing || isViewing">
@@ -67,13 +74,6 @@
             <input v-model="formData.cantidadExistencia" type="number" :required="isEditing" :readonly="true" :disabled="true"
               class="w-full px-4 py-2 rounded-lg border bg-gray-100 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ingrese la cantidad en existencia" />
-          </div>
-          <!-- Costo -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
-            <input v-model="formData.costo" type="number" step="0.01" required :readonly="isViewing" :disabled="isViewing || isLoading"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ingrese el costo" />
           </div>
         </div>
         <!-- Nota -->

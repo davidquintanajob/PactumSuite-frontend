@@ -37,12 +37,12 @@
                 </div>
 
                 <!-- Logo / Nombre (Móvil) -->
-                <h1 class="text-white text-3xl font-sans font-bold tracking-tight md:hidden">
-                    SOLUTEL
+                <h1 @click="goHome" class="text-white text-3xl font-sans font-bold tracking-tight md:hidden cursor-pointer select-none" role="button" tabindex="0">
+                    PACTUM
                 </h1>
 
                 <!-- Menú hamburguesa (Móvil) - SIN CAMBIOS -->
-                <button @click="toggleMenu"
+                <button @click.stop="toggleMenu"
                     class="md:hidden text-white focus:outline-none transition duration-300">
                     <svg v-if="!isMenuOpen" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none"
                         viewBox="0 0 24 24" stroke="currentColor">
@@ -57,7 +57,7 @@
                 </button>
 
                 <!-- Botón de usuario (Móvil) -->
-                <a @click="toggleUserMenu"
+                <a @click.stop="handlePerfilClick"
                     class="w-12 h-12 rounded-full overflow-hidden border-2 border-white hover:bg-accent hover:border-accent transition ml-6 flex items-center justify-center cursor-pointer md:hidden">
                     <div class="relative w-full h-full flex items-center justify-center">
                         <img src="/usuario.png" alt="Usuario"
@@ -70,7 +70,7 @@
                 <!-- Botones de navegación (Escritorio) -->
                 <div class="hidden md:flex flex-col w-full md:mt-4 overflow-y-auto" style="max-height: calc(100vh - 200px);">
                     <div class="flex flex-col space-y-4 w-full">
-                        <a v-for="(option, index) in options" :key="index"
+                        <a v-for="(option, index) in visibleOptions" :key="index"
                             href="#"
                             class="text-white flex items-center px-4 py-3 rounded-lg border border-white transition group hover:bg-accent hover:text-black"
                             @click.prevent="handleNavigation(option.link); isNavCollapsed = true">
@@ -85,8 +85,8 @@
             </div>
 
             <!-- Overlay para el menú de usuario (SIN CAMBIOS) -->
-            <div v-if="isUserMenuOpen" class="fixed inset-0 z-40" @click="isUserMenuOpen = false">
-                <div class="fixed top-0 right-0 w-64 h-screen bg-secondary p-4 space-y-2 transform transition-all duration-300 ease-in-out"
+            <div v-if="isUserMenuOpen" class="fixed inset-0 z-50" @click="isUserMenuOpen = false">
+                <div class="fixed top-0 right-0 w-64 h-screen bg-secondary p-4 space-y-2 transform transition-all duration-300 ease-in-out z-50"
                     :style="{ transform: isUserMenuOpen ? 'translateX(0)' : 'translateX(100%)' }" @click.stop>
                     <a href="/perfil"
                         class="group flex items-center text-white py-2 rounded-lg hover:bg-accent transition group-hover:text-black"
@@ -108,8 +108,8 @@
 
             <!-- Menú desplegable (Móvil) - SIN CAMBIOS -->
             <div v-if="isMenuOpen"
-                class="md:hidden fixed top-16 left-0 w-full bg-secondary p-4 space-y-2 transform transition-all duration-300 ease-in-out">
-                <a v-for="(option, index) in options" :key="index"
+                class="md:hidden fixed top-16 left-0 w-full bg-secondary p-4 space-y-2 transform transition-all duration-300 ease-in-out z-50 overflow-auto">
+                <a v-for="(option, index) in visibleOptions" :key="index"
                     href="#"
                     class="flex items-center block text-white text-center py-2 rounded-lg transition group hover:bg-accent"
                     @click.prevent="handleNavigation(option.link); isMenuOpen = false">
@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { navigateTo } from 'nuxt/app';
 
 const navRoot = ref(null);
@@ -149,20 +149,32 @@ const toggleNav = () => {
     if (!isNavCollapsed.value) startInactivityTimer(); else clearInactivityTimer();
 };
 
-// Opciones de navegación
+// Opciones de navegación (ahora incluyen el arreglo `roles` con los roles autorizados)
 const options = [
-    { label: "Entidades", src: "/edificios.png", link: "/entidades" },
-    { label: "Contratos", src: "/contrato.png", link: "/contratos" },
-    { label: "Trabajadores", src: "/lanza-libre.png", link: "/trabajadores" },
-    { label: "Productos", src: "/Productos.png", link: "/productos" },
-    { label: "Entradas", src: "/agregar-producto.png", link: "/entradas" },
-    { label: "Salidas", src: "/carritoDeCompras.png", link: "/salidas" },
-    { label: "Facturas", src: "/Facturas.png", link: "/facturas" },
-    { label: "Servicios", src: "/Servicios.png", link: "/servicios" },
-    { label: "Ofertas", src: "/Ofertas.png", link: "/ofertas" },
-    { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos" },
-    { label: "Usuario", src: "/usuarios.png", link: "/usuarios" }
+    { label: "Entidades", src: "/edificios.png", link: "/entidades", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Contratos", src: "/contrato.png", link: "/contratos", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Trabajadores", src: "/lanza-libre.png", link: "/trabajadores", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Productos", src: "/Productos.png", link: "/productos", roles: ["Administrador", "Comercial", "Invitado", "Vendedor"] },
+    { label: "Ventas", src: "/carritoDeCompras.png", link: "/ventas", roles: ["Administrador", "Comercial", "Invitado", "Vendedor"] },
+    { label: "Entradas", src: "/agregar-producto.png", link: "/entradas", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Salidas", src: "/ventas.png", link: "/salidas", roles: ["Administrador", "Comercial", "Invitado", "Vendedor"] },
+    { label: "Facturas", src: "/Facturas.png", link: "/facturas", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Servicios", src: "/Servicios.png", link: "/servicios", roles: ["Administrador", "Comercial", "Invitado"] },
+    //{ label: "Ofertas", src: "/Ofertas.png", link: "/ofertas", roles: ALL_ROLES },
+    { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Usuario", src: "/usuarios.png", link: "/usuarios", roles: ["Administrador", "Comercial", "Invitado"] }
 ];
+
+// Valores por defecto de roles (asegurar consistencia)
+const DEFAULT_ROLES = ["Administrador", "Comercial", "Invitado", "Vendedor"];
+
+// Normalizar opciones para que siempre tengan `roles` como arreglo
+for (let i = 0; i < options.length; i++) {
+    const opt = options[i];
+    if (!opt || !opt.roles || !Array.isArray(opt.roles)) {
+        options[i] = { ...opt, roles: DEFAULT_ROLES };
+    }
+}
 
 // Función para alternar el menú de usuario
 const toggleUserMenu = () => {
@@ -210,6 +222,50 @@ function handleNavigation(link) {
         navigateTo('/login');
     }
 }
+
+// Comprueba si una opción es visible para el usuario logeado
+const isOptionVisible = (option, index = -1) => {
+    try {
+        const usuarioStr = localStorage.getItem('usuario');
+        if (!usuarioStr) {
+            return true;
+        }
+        if (!option) {
+            console.warn('[Navbar] isOptionVisible called with undefined option — hiding by default');
+            return false;
+        }
+        const usuario = JSON.parse(usuarioStr);
+
+        // Aceptar varias claves posibles para el rol y normalizar
+        const rawRole = usuario && (usuario.rol || usuario.role || usuario.perfil || usuario.profile) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+        if (!rawRole) {
+            return true;
+        }
+        const role = String(rawRole).trim().toLowerCase();
+        let normalizedRoles;
+        if (!option.roles || !Array.isArray(option.roles)) {
+            normalizedRoles = DEFAULT_ROLES.map(r => String(r).trim().toLowerCase());
+        } else {
+            normalizedRoles = option.roles.map(r => String(r).trim().toLowerCase());
+        }
+        const visible = normalizedRoles.includes(role);
+        return visible;
+    } catch (e) {
+        // En caso de error, no bloquear navegación
+        console.warn('isOptionVisible error parsing usuario from localStorage', e);
+        return true;
+    }
+};
+
+// Computed: lista de opciones filtradas por rol (evita llamadas con option undefined)
+const visibleOptions = computed(() => {
+    try {
+        return Array.isArray(options) ? options.filter((opt, idx) => isOptionVisible(opt, idx)) : [];
+    } catch (e) {
+        console.warn('visibleOptions compute error', e);
+        return options || [];
+    }
+});
 
 onMounted(() => {
     const hasVisited = localStorage.getItem('hasVisitedNavbar');

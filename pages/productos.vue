@@ -65,7 +65,7 @@
             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
             Buscar
           </button>
-          <button @click="exportToExcel"
+          <button v-if="!isVendedor" @click="exportToExcel"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -78,7 +78,7 @@
             </svg>
             Exportar a Excel
           </button>
-          <button @click="exportToExcelWithVentasCompras"
+          <button v-if="!isVendedor" @click="exportToExcelWithVentasCompras"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -91,16 +91,16 @@
       </div>
       <div class="flex justify-between items-center mb-4 mt-2">
         <div class="flex items-center gap-2 flex-wrap">
-          <button @click="activeTab = 'productos'"
+          <button v-if="!isVendedor" @click="activeTab = 'productos'"
             :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'productos' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
             Productos
           </button>
-          <button @click="activeTab = 'ventas'"
+          <button v-if="!isVendedor" @click="activeTab = 'ventas'"
             :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'ventas' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
-            Ventas
+            Ventas de facturas
           </button>
         </div>
-        <button @click="nuevaProducto"
+        <button v-if="!isVendedor" @click="nuevaProducto"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
@@ -115,7 +115,7 @@
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Productos</h2>
       </div>
-      <DataTable :columns="productosColumns" :items="productosData" :actions="productosActions"
+      <DataTable :columns="visibleProductosColumns" :items="productosData" :actions="visibleProductosActions"
         :total-items="totalProductos" :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
@@ -194,7 +194,7 @@
         </button>
         <button @click="activeTab = 'ventas'"
           :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'ventas' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
-          Ventas
+          Ventas de facturas
         </button>
       </div>
       <!-- Tabla Ventas -->
@@ -212,7 +212,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h, watch } from 'vue';
+import { ref, onMounted, h, watch, computed } from 'vue';
 import SeoMeta from '@/components/SeoMeta.vue';
 import Navbar from '@/components/Navbar.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -464,6 +464,29 @@ const productosActions = [
     buttonClass: 'px-3 py-1 bg-danger text-neutral rounded-md hover:bg-danger/90'
   }
 ];
+
+// Computed: detecta si el usuario logueado es 'Vendedor'
+const isVendedor = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'vendedor';
+  } catch (e) {
+    return false;
+  }
+});
+
+// Columnas y acciones visibles según rol
+const visibleProductosColumns = computed(() => {
+  return productosColumns.filter(col => !(isVendedor.value && col.key === 'costo'));
+});
+
+const visibleProductosActions = computed(() => {
+  return isVendedor.value ? [] : productosActions;
+});
 
 const fetchProductos = async (page = currentPage.value, limit = itemsPorPage.value) => {
   isLoading.value = true;

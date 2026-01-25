@@ -83,6 +83,7 @@
               <option value="Administrador">Administrador</option>
               <option value="Comercial">Comercial</option>
               <option value="Invitado">Invitado</option>
+              <option value="Vendedor">Vendedor</option>
             </select>
           </div>
 

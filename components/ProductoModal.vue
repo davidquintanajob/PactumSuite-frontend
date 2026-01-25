@@ -47,13 +47,13 @@
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ingrese el precio" />
           </div>
-          <!-- Costo -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
-            <input v-model="formData.costo" type="number" step="0.01" required :readonly="isViewing" :disabled="isViewing || isLoading"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ingrese el costo" />
-          </div>
+            <!-- Costo -->
+            <div v-if="!isVendedor">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
+              <input v-model="formData.costo" type="number" step="0.01" required :readonly="isViewing" :disabled="isViewing || isLoading"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ingrese el costo" />
+            </div>
           <!-- Unidad de Medida -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Unidad de Medida</label>
@@ -148,7 +148,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import MessageBanner from './MessageBanner.vue';
 
 const props = defineProps({
@@ -167,6 +167,20 @@ const formData = ref({
   tipoProducto: '',
   cantidadExistencia: 0,
   costo: 0
+});
+
+// Computed para detectar si el usuario logueado tiene rol 'Vendedor'
+const isVendedor = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'vendedor';
+  } catch (e) {
+    return false;
+  }
 });
 const errorMsg = ref('');
 const isLoading = ref(false);
@@ -200,7 +214,11 @@ watch(() => props.producto, (producto) => {
 
 const handleSubmit = async () => {
   errorMsg.value = '';
-  const requiredFields = ['codigo', 'nombre', 'precio', 'unidadMedida', 'tipoProducto', 'costo'];
+  const requiredFields = ['codigo', 'nombre', 'precio', 'unidadMedida', 'tipoProducto'];
+  // Exigir costo solo si el usuario NO es Vendedor
+  if (!isVendedor.value) {
+    requiredFields.push('costo');
+  }
   if (props.isEditing) {
     requiredFields.push('cantidadExistencia');
   }

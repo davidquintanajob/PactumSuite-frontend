@@ -31,14 +31,14 @@
       <!-- Funcionalidades principales y accesos directos -->
       <section class="flex-1 flex flex-col items-center justify-center px-4">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-8 max-w-7xl w-full mb-12">
-          <div @click="goTo('contratos')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
+          <div @click="!isVendedor && goTo('contratos')" :class="[ isVendedor ? 'pointer-events-none opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg', 'bg-white rounded-xl shadow p-6 flex flex-col items-center transition group' ]">
             <svg class="h-12 w-12 text-primary mb-4 group-hover:brightness-90 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
             <h3 class="text-xl font-semibold text-primary mb-2">Contratos</h3>
             <p class="text-dark text-center">Gestiona todos los contratos de tu organización.</p>
           </div>
-          <div @click="goTo('entidades')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group relative">
+          <div @click="!isVendedor && goTo('entidades')" :class="[ isVendedor ? 'pointer-events-none opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg', 'bg-white rounded-xl shadow p-6 flex flex-col items-center transition group relative' ]">
             <!-- Indicador numérico para contratos próximos a vencer -->
             <div v-if="contratosProximosCount > 0" class="absolute -top-2 -right-2 bg-danger text-neutral text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
               {{ contratosProximosCount }}
@@ -49,7 +49,7 @@
             <h3 class="text-xl font-semibold text-primary mb-2">Entidades</h3>
             <p class="text-dark text-center">Administra proveedores, clientes y otras entidades.</p>
           </div>
-          <div @click="goTo('facturas')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
+          <div @click="!isVendedor && goTo('facturas')" :class="[ isVendedor ? 'pointer-events-none opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg', 'bg-white rounded-xl shadow p-6 flex flex-col items-center transition group' ]">
             <svg class="h-12 w-12 text-accent mb-4 group-hover:text-primary transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
@@ -63,7 +63,7 @@
             <h3 class="text-xl font-semibold text-primary mb-2">Productos</h3>
             <p class="text-dark text-center">Gestiona los productos que tienes para la venta y la existencia de estos.</p>
           </div>
-          <div @click="goTo('trabajadores')" class="bg-white rounded-xl shadow p-6 flex flex-col items-center hover:shadow-lg transition cursor-pointer group">
+          <div @click="!isVendedor && goTo('trabajadores')" :class="[ isVendedor ? 'pointer-events-none opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg', 'bg-white rounded-xl shadow p-6 flex flex-col items-center transition group' ]">
             <svg class="h-12 w-12 text-accent mb-4 group-hover:text-primary transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
@@ -87,7 +87,7 @@ import Navbar from '@/components/Navbar.vue';
 import MessageBanner from '@/components/MessageBanner.vue';
 import SeoMeta from '@/components/SeoMeta.vue';
 import { navigateTo } from 'nuxt/app';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 const goToLogin = () => navigateTo('/login');
 
@@ -99,6 +99,20 @@ const goTo = (ruta) => {
         navigateTo('/login');
     }
 };
+
+const isVendedor = computed(() => {
+  try {
+    if (typeof window === 'undefined' || !localStorage) return false;
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuarioObj = JSON.parse(usuarioStr);
+    const rawRole = usuarioObj?.rol || usuarioObj?.role || usuarioObj?.perfil || usuarioObj?.profile;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'vendedor';
+  } catch (e) {
+    return false;
+  }
+});
 
 // Variables reactivas para la verificación de contratos
 const verificationBanner = ref(null);

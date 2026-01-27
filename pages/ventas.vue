@@ -129,11 +129,11 @@
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Ventas</h2>
         <div>
-          <button @click="openCreateModal" class="px-3 py-1 bg-green-600 text-white rounded-md">+ Agregar Venta</button>
+          <button v-if="!isInvitado" @click="openCreateModal" class="px-3 py-1 bg-green-600 text-white rounded-md">+ Agregar Venta</button>
         </div>
       </div>
 
-      <DataTable :columns="ventasColumns" :items="itemsData" :actions="ventasActions" :total-items="totalItems"
+      <DataTable :columns="ventasColumns" :items="itemsData" :actions="isInvitado ? [] : ventasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
       <!-- Resumen con sumatorios devueltos por la API -->
@@ -437,6 +437,20 @@ const ventasActions = [
     }
   }
 ];
+
+// Computed: determinar si el usuario actual es Invitado
+const isInvitado = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'invitado';
+  } catch (e) {
+    return false;
+  }
+});
 
 function selectViewMode(mode) {
   if (viewMode.value === mode) return;

@@ -34,7 +34,7 @@
             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
             Buscar
           </button>
-          <button @click="exportToExcel"
+          <button v-if="!isInvitado" @click="exportToExcel"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors">
             Exportar a Excel
           </button>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import SeoMeta from '@/components/SeoMeta.vue';
 import Navbar from '@/components/Navbar.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -73,6 +73,20 @@ const searchDescripcion = ref('');
 const serviciosData = ref([]);
 const isLoading = ref(false);
 const errorBanner = ref(null);
+
+// Computed: determinar si el usuario actual es Invitado
+const isInvitado = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'invitado';
+  } catch (e) {
+    return false;
+  }
+});
 
 const serviciosColumns = [
   { key: 'descripcion', label: 'Descripción' },

@@ -85,7 +85,7 @@
             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
             Buscar
           </button>
-          <button @click="exportToExcel"
+          <button v-if="!isInvitado" @click="exportToExcel"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -94,7 +94,7 @@
             </svg>
             Exportar a Excel
           </button>
-          <button @click="exportToExcelWithContratos"
+          <button v-if="!isInvitado" @click="exportToExcelWithContratos"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -110,7 +110,7 @@
     <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Trabajadores Autorizados</h2>
-        <button @click="nuevaTrabajador"
+        <button v-if="!isInvitado" @click="nuevaTrabajador"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
@@ -122,7 +122,7 @@
       <DataTable
         :columns="trabajadoresColumns"
         :items="trabajadoresData"
-        :actions="trabajadoresActions"
+        :actions="isInvitado ? [] : trabajadoresActions"
         :total-items="totalTrabajadores"
         :items-per-page="itemsPorPage"
         :current-page="currentPage"
@@ -139,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h } from 'vue';
+import { ref, onMounted, h, computed } from 'vue';
 import SeoMeta from '@/components/SeoMeta.vue';
 import Navbar from '@/components/Navbar.vue';
 import DataTable from '@/components/DataTable.vue';
@@ -178,6 +178,17 @@ const isViewing = ref(false);
 const errorBanner = ref(null);
 const showConfirmBanner = ref(false);
 const trabajadorAEliminar = ref(null);
+
+// Computed: determinar si el usuario actual es Invitado
+const isInvitado = computed(() => {
+  try {
+    const u = JSON.parse(localStorage.getItem('usuario') || 'null');
+    const raw = u && (u.rol || u.role || (u.perfil && u.perfil.rol) || (u.profile && u.profile.role));
+    return raw && String(raw).trim().toLowerCase() === 'invitado';
+  } catch (e) {
+    return false;
+  }
+});
 
 const trabajadoresColumns = [
   { key: 'nombre', label: 'Nombre' },

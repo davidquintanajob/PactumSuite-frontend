@@ -161,8 +161,8 @@ const options = [
     { label: "Facturas", src: "/Facturas.png", link: "/facturas", roles: ["Administrador", "Comercial", "Invitado"] },
     { label: "Servicios", src: "/Servicios.png", link: "/servicios", roles: ["Administrador", "Comercial", "Invitado"] },
     //{ label: "Ofertas", src: "/Ofertas.png", link: "/ofertas", roles: ALL_ROLES },
-    { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos", roles: ["Administrador", "Comercial", "Invitado"] },
-    { label: "Usuario", src: "/usuarios.png", link: "/usuarios", roles: ["Administrador", "Comercial", "Invitado"] }
+    { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos", roles: ["Administrador", "Comercial"] },
+    { label: "Usuario", src: "/usuarios.png", link: "/usuarios", roles: ["Administrador"] }
 ];
 
 // Valores por defecto de roles (asegurar consistencia)

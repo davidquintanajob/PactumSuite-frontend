@@ -121,7 +121,7 @@
             class="px-6 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
             Buscar
           </button>
-          <button @click="exportToExcel"
+          <button v-if="!isInvitado" @click="exportToExcel"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -130,14 +130,14 @@
             </svg>
             Exportar a Excel
           </button>
-          <button @click="exportToExcelWithProductos"
+          <button v-if="!isInvitado" @click="exportToExcelWithProductos"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
             Exportar a Excel con Productos
           </button>
-          <button @click="exportToExcelWithServicios"
+          <button v-if="!isInvitado" @click="exportToExcelWithServicios"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -152,7 +152,7 @@
     <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Facturas</h2>
-        <button @click="nuevaFactura"
+        <button v-if="!isInvitado" @click="nuevaFactura"
           class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
@@ -161,7 +161,7 @@
           Nueva Factura
         </button>
       </div>
-      <DataTable :columns="facturasColumns" :items="itemsData" :actions="facturasActions" :total-items="totalItems"
+      <DataTable :columns="facturasColumns" :items="itemsData" :actions="isInvitado ? [] : facturasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
       <!-- Información resumen debajo de la tabla -->
@@ -216,7 +216,7 @@
 </template>
 
 <script setup>
-import { ref, h, onMounted, watch } from 'vue';
+import { ref, h, onMounted, watch, computed } from 'vue';
 import Navbar from "@/components/Navbar.vue";
 import SeoMeta from '@/components/SeoMeta.vue';
 import DataTable from "@/components/DataTable.vue";
@@ -258,6 +258,19 @@ const showModal = ref(false);
 const showPDFModal = ref(false);
 const selectedFactura = ref({});
 const isEditing = ref(false);
+// Computed: determinar si el usuario actual es Invitado
+const isInvitado = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'invitado';
+  } catch (e) {
+    return false;
+  }
+});
 const isViewing = ref(false);
 
 // Columnas de la tabla

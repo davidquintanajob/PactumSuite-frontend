@@ -65,7 +65,7 @@
             class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
             Buscar
           </button>
-          <button v-if="!isVendedor" @click="exportToExcel"
+          <button v-if="!isVendedor && !isInvitado" @click="exportToExcel"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -78,7 +78,7 @@
             </svg>
             Exportar a Excel
           </button>
-          <button v-if="!isVendedor" @click="exportToExcelWithVentasCompras"
+          <button v-if="!isVendedor && !isInvitado" @click="exportToExcelWithVentasCompras"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -91,16 +91,16 @@
       </div>
       <div class="flex justify-between items-center mb-4 mt-2">
         <div class="flex items-center gap-2 flex-wrap">
-          <button v-if="!isVendedor" @click="activeTab = 'productos'"
+          <button v-if="!isVendedor && !isInvitado" @click="activeTab = 'productos'"
             :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'productos' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
             Productos
           </button>
-          <button v-if="!isVendedor" @click="activeTab = 'ventas'"
+          <button v-if="!isVendedor && !isInvitado" @click="activeTab = 'ventas'"
             :class="['px-4 py-2 rounded-lg border transition-colors', activeTab === 'ventas' ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100']">
             Ventas de facturas
           </button>
         </div>
-        <button v-if="!isVendedor" @click="nuevaProducto"
+        <button v-if="!isVendedor && !isInvitado" @click="nuevaProducto"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
@@ -479,13 +479,27 @@ const isVendedor = computed(() => {
   }
 });
 
+// Computed: determinar si el usuario actual es Invitado
+const isInvitado = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'invitado';
+  } catch (e) {
+    return false;
+  }
+});
+
 // Columnas y acciones visibles según rol
 const visibleProductosColumns = computed(() => {
   return productosColumns.filter(col => !(isVendedor.value && col.key === 'costo'));
 });
 
 const visibleProductosActions = computed(() => {
-  return isVendedor.value ? [] : productosActions;
+  return (isVendedor.value || isInvitado.value) ? [] : productosActions;
 });
 
 const fetchProductos = async (page = currentPage.value, limit = itemsPorPage.value) => {

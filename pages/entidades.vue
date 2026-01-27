@@ -123,11 +123,11 @@
               class="px-6 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
               Buscar
             </button>
-            <button @click="exportToExcel"
+            <button v-if="!isInvitado" @click="exportToExcel"
               class="px-6 py-2 bg-success text-neutral rounded-lg hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 transition-colors">
                 Exportar a Excel
             </button>
-            <button @click="exportToExcelWithContracts"
+            <button v-if="!isInvitado" @click="exportToExcelWithContracts"
               class="px-6 py-2 bg-info text-neutral rounded-lg hover:bg-info/90 focus:outline-none focus:ring-2 focus:ring-info focus:ring-offset-2 transition-colors">
                 Exportar a Excel con Contratos
             </button>
@@ -139,7 +139,7 @@
       <div class="w-[95%] mx-auto px-4 py-4">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold">Entidades</h2>
-          <button @click="nuevaEntidad"
+          <button v-if="!isInvitado" @click="nuevaEntidad"
           class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
             stroke="currentColor">
@@ -148,7 +148,7 @@
           Nueva Entidad
         </button>
       </div>
-    <DataTable :columns="entidadesColumns" :items="itemsData" :actions="entidadesActions" :total-items="totalItems"
+    <DataTable :columns="entidadesColumns" :items="itemsData" :actions="isInvitado ? [] : entidadesActions" :total-items="totalItems"
       :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
       @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
@@ -211,6 +211,17 @@ const itemsPorPage = ref(20);
   
   // Datos de ejemplo para la tabla (simulando datos paginados)
 const itemsData = ref([]);
+
+// Computed: determinar si el usuario actual es Invitado
+const isInvitado = computed(() => {
+  try {
+    const u = JSON.parse(localStorage.getItem('usuario') || 'null');
+    const raw = u && (u.rol || u.role || (u.perfil && u.perfil.rol) || (u.profile && u.profile.role));
+    return raw && String(raw).trim().toLowerCase() === 'invitado';
+  } catch (e) {
+    return false;
+  }
+});
 
 // Función para cargar datos de la API
 const fetchItems = async (page = 1, limit = 20, nombre = '', direccion = '', telefono = '', cuenta_bancaria = '', tipo_entidad = '', codigo_reo = '', codigo_nit = '', organismo = '', consecutivo = '') => {

@@ -32,6 +32,13 @@
         </div>
       </teleport>
 
+      <!-- Confirm print after creation -->
+      <teleport to="body" v-if="showPrintConfirm">
+        <div class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[10000] w-full max-w-md px-4 pointer-events-auto">
+          <ConfirmBanner :title="'¿Deseas imprimir la venta creada?'" :description="'¿Deseas imprimir la lista de venta que acabas de crear?'" :icon="PrintIcon" type="warning" @confirm="printCreatedVenta" @close="handlePrintCancel" />
+        </div>
+      </teleport>
+
       <!-- Scanner overlay (teleport) -->
       <teleport to="body">
         <div v-if="scannerActive" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-80 p-4">
@@ -158,9 +165,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, onUnmounted, nextTick } from 'vue';
+import { ref, onMounted, computed, watch, onUnmounted, nextTick, h } from 'vue';
 import SelectSearchAPI from './SelectSearchAPI.vue';
 import MessageBanner from './MessageBanner.vue';
+import ConfirmBanner from './ConfirmBanner.vue';
 const config = useRuntimeConfig();
 
 const props = defineProps({
@@ -177,6 +185,17 @@ const formaPago = ref('efectivo'); // 'efectivo' | 'transferencia'
 const isSubmitting = ref(false);
 const loadingBanner = ref(null);
 const errorBanner = ref(null);
+const showPrintConfirm = ref(false);
+const createdListaId = ref(null);
+const createdListaRaw = ref(null);
+const PrintIcon = {
+  render() {
+    return h('svg', { xmlns: 'http://www.w3.org/2000/svg', class: 'h-6 w-6', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M6 9V2h12v7' }),
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M6 18h12v-5H6v5z' })
+    ]);
+  }
+};
 // Scanner state
 const scannerActive = ref(false);
 const videoEl = ref(null);
@@ -501,6 +520,101 @@ function clearBanners() {
   loadingBanner.value = null;
 }
 
+function formatMoney(v) { return Number(v||0).toFixed(2); }
+function formatDate(s) { if (!s) return '-'; try { return new Date(s).toLocaleString(); } catch(e) { return s; } }
+
+function buildFlatVentas(data) {
+  if (!data) return [];
+  if (Array.isArray(data.ventas)) return data.ventas;
+  if (Array.isArray(data.data) && data.data.length && Array.isArray(data.data[0].ventas)) return data.data[0].ventas;
+  return [];
+}
+
+function createPrintWindowFromData(data) {
+  const flatVentas = buildFlatVentas(data);
+  const total = flatVentas.reduce((acc, v) => acc + (Number(v.precio_cobrado)||0) * (Number(v.cantidad)||0), 0);
+  const contentRows = flatVentas.map(v => {
+    const nombre = (v.producto && (v.producto.nombre)) || (v.servicio && v.servicio.nombre) || v.nombre || '---';
+    const cantidad = v.cantidad || 0;
+    const precio = formatMoney(v.precio_cobrado);
+    const totalRow = formatMoney((Number(v.precio_cobrado)||0) * (Number(v.cantidad)||0));
+    return `<tr class="border-b"><td class="py-2">${nombre}</td><td class="py-2 text-right">${cantidad}</td><td class="py-2 text-right">${precio}</td><td class="py-2 text-right">${totalRow}</td></tr>`;
+  }).join('\n');
+
+  const fecha = formatDate(data?.createdAt || data?.created_at || data?.fecha || '');
+  const css = `body{font-family: Helvetica,Arial,sans-serif;padding:20px;color:#111;} table{width:100%;border-collapse:collapse;} th,td{padding:8px;border-bottom:1px solid #eee;} .text-right{text-align:right;} .title{font-weight:700;margin-bottom:8px}`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${css}</style></head><body><div class="text-center"><div class="title">Comprobante de pago</div></div><div class="mb-4"><div><strong>Fecha creación:</strong> ${fecha}</div></div><table class="w-full text-sm border-collapse"><thead><tr class="border-b"><th class="text-left py-2">Producto</th><th class="text-right py-2">Cantidad</th><th class="text-right py-2">Precio</th><th class="text-right py-2">Total</th></tr></thead><tbody>${contentRows}</tbody></table><div class="mt-4 text-right"><div><strong>Total:</strong> ${formatMoney(total)}</div></div></body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('No se pudo abrir la ventana de impresión. Revisa bloqueadores de ventanas emergentes.'); return null; }
+  w.document.open(); w.document.write(html); w.document.close();
+  const tryPrint = () => { try { w.focus(); w.print(); } catch (e) { console.warn('Print failed', e); } };
+  w.onload = () => setTimeout(tryPrint, 300);
+  setTimeout(tryPrint, 800);
+  return w;
+}
+
+async function printCreatedVenta() {
+  showPrintConfirm.value = false;
+  const idLista = createdListaId.value;
+  // if we don't have an id, emit raw data if available
+  if (!idLista) {
+    // print directly from raw response if available
+    createPrintWindowFromData(createdListaRaw.value || null);
+    // close modal after printing
+    emit('update:modelValue', false);
+    ventas.value = [];
+    createdListaId.value = null;
+    createdListaRaw.value = null;
+    return;
+  }
+  try {
+    isSubmitting.value = true;
+    loadingBanner.value = { title: 'Cargando comprobante', description: 'Obteniendo lista de venta...', type: 'info' };
+    const token = localStorage.getItem('token');
+    const resp = await fetch(`${config.public.backendHost}/ListaVenta/${idLista}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'Authorization': token }
+    });
+    if (resp.status === 401) {
+      errorBanner.value = { title: 'Sesión Expirada', description: 'Tu sesión ha expirado.', type: 'warning' };
+      localStorage.removeItem('token'); localStorage.removeItem('user');
+      setTimeout(() => navigateTo('/'), 2000);
+      return;
+    }
+    if (!resp.ok) {
+      let txt = await resp.text();
+      try { txt = JSON.parse(txt); } catch (e) {}
+      errorBanner.value = { title: `Error ${resp.status}`, description: JSON.stringify(txt), type: 'error' };
+      return;
+    }
+    const data = await resp.json();
+    // print directly using fetched data and do not open VentaComprobante
+    createPrintWindowFromData(data);
+    // Close modal after printing
+    emit('update:modelValue', false);
+    ventas.value = [];
+    createdListaId.value = null;
+    createdListaRaw.value = null;
+  } catch (err) {
+    console.error('Error fetching lista venta for print:', err);
+    errorBanner.value = { title: 'Error', description: 'No se pudo obtener la lista para imprimir.', type: 'error' };
+  } finally {
+    isSubmitting.value = false;
+    loadingBanner.value = null;
+  }
+}
+
+function handlePrintCancel() {
+  showPrintConfirm.value = false;
+  // Close modal when user declines printing
+  emit('update:modelValue', false);
+  ventas.value = [];
+  createdListaId.value = null;
+  createdListaRaw.value = null;
+  clearBanners();
+}
+
 async function submit() {
   let id_usuario = null;
   try {
@@ -613,9 +727,16 @@ async function submit() {
       // Emit to parent so it refreshes and shows success
       emit('submit', { mode: 'create', items: body.ventas, nota: body.nota, formaPago: formaPago.value });
       errorBanner.value = { title: 'Éxito', description: 'Ventas creadas correctamente.', type: 'success' };
-      // close modal
-      emit('update:modelValue', false);
+      // NOTE: Do NOT close modal here. Wait for user's choice in ConfirmBanner.
+      // Keep ventas reset so the form is clean if user wants to create more later.
       ventas.value = [];
+      // store created id/raw for optional printing
+      try {
+        createdListaRaw.value = responseData || null;
+        createdListaId.value = (responseData && (responseData.id_lista_venta || responseData.id || (responseData.data && (responseData.data.id_lista_venta || responseData.data.id)))) || null;
+      } catch (e) { createdListaId.value = null; createdListaRaw.value = null; }
+      // ask user if they want to print the created venta
+      showPrintConfirm.value = true;
       // clear success banner after a short delay so it doesn't persist on reopen
       setTimeout(() => { errorBanner.value = null; loadingBanner.value = null; }, 2500);
 

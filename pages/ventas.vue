@@ -691,6 +691,8 @@ const handleNewVentas = async (ventasPayload) => {
   showSellModal.value = false;
 };
 
+// printing is handled directly by VentaModalSell now
+
 async function confirmDeleteVenta() {
   showConfirmBanner.value = false;
   if (!ventaAEliminar.value) return;

@@ -54,10 +54,34 @@
                   </div>
                 </div>
 
-                <!-- Renderizado personalizado de celda dentro del contenedor relativo -->
-                <div v-if="column.cellRenderer" v-html="column.cellRenderer(getNestedValue(item, column.key), item)"></div>
-                <!-- Renderizado normal de texto -->
-                <span v-else>{{ column.format ? column.format(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}</span>
+                <!-- If photos are enabled show circular image before content; otherwise keep existing layout -->
+                <div v-if="props.isShowPhotos" class="flex items-center">
+                  <div class="flex-shrink-0 mr-3 relative w-10 h-10">
+                    <img
+                      :src="getImageSrc(item)"
+                      :alt="getNestedValue(item, column.key) || 'foto'"
+                      class="w-10 h-10 rounded-full object-cover border bg-white"
+                      @load="() => { loadingMap[index] = false }"
+                      @error="(e) => { e.target.src = getPlaceholderDataUrl(); loadingMap[index] = false }"
+                    />
+                    <div v-if="loadingMap[index]" class="absolute inset-0 flex items-center justify-center bg-white/60 rounded-full">
+                      <svg class="animate-spin h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <div v-if="column.cellRenderer" v-html="column.cellRenderer(getNestedValue(item, column.key), item)"></div>
+                    <span v-else class="truncate block">{{ column.format ? column.format(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}</span>
+                  </div>
+                </div>
+                <div v-else>
+                  <!-- Renderizado personalizado de celda dentro del contenedor relativo -->
+                  <div v-if="column.cellRenderer" v-html="column.cellRenderer(getNestedValue(item, column.key), item)"></div>
+                  <!-- Renderizado normal de texto -->
+                  <span v-else>{{ column.format ? column.format(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}</span>
+                </div>
               </div>
               <!-- Other columns: default render -->
               <div v-else>
@@ -131,7 +155,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, reactive } from 'vue';
+import { useRuntimeConfig } from '#app';
 
 const props = defineProps({
   // Array de objetos que definen las columnas
@@ -179,9 +204,45 @@ const props = defineProps({
     type: Boolean,
     default: false
   }
+  ,
+  // Si true muestra una foto circular al inicio de la primera columna (por fila)
+  isShowPhotos: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const emit = defineEmits(['page-change']);
+
+const config = useRuntimeConfig();
+
+const loadingMap = reactive({});
+
+function isRemoteImage(src) {
+  return typeof src === 'string' && src.startsWith('http');
+}
+
+// Inicializar estados de carga por cada item (usa index como key)
+watch(() => props.items, (newItems) => {
+  if (!Array.isArray(newItems)) return;
+  newItems.forEach((item, idx) => {
+    const src = getImageSrc(item);
+    loadingMap[idx] = isRemoteImage(src);
+  });
+}, { immediate: true, deep: true });
+
+function getImageSrc(item) {
+  const foto = item && (item.foto || item.imagen || item.image) ? (item.foto || item.imagen || item.image) : null;
+  if (!foto) return getPlaceholderDataUrl();
+  if (typeof foto === 'string' && (foto.startsWith('http') || foto.startsWith('data:'))) return foto;
+  // otherwise assume relative path on backend
+  return `${config.public.backendHost}${foto}`;
+}
+
+function getPlaceholderDataUrl() {
+  // Use a public image in /public (edificios.png). Nuxt serves /public at site root.
+  return '/image.png';
+}
 
 // Computed properties
 // Opciones de elementos por página

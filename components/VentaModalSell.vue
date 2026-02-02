@@ -70,9 +70,13 @@
           <div class="grid grid-cols-1 gap-4">
             <div v-for="(item, idx) in ventas" :key="item._id" class="p-3 border rounded bg-gray-50">
               <div class="flex flex-col md:flex-row md:items-end md:gap-4">
-                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <div>
-                    <label class="block text-sm text-gray-700 mb-1">Producto</label>
+                <div class="flex-1 grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
+                  <div class="flex flex-col items-center md:col-span-3">
+                    <label class="block text-sm text-gray-700 mb-1 text-center">Producto</label>
+                    <div class="flex items-center gap-3 w-full">
+                      <img :src="getItemImageSrc(item)" @error="onImgError($event)"
+                        class="w-14 h-14 rounded-full object-cover bg-white border" alt="foto-producto" />
+                      <div class="flex-1 w-full">
                         <SelectSearchAPI
                           v-model="item.id_producto"
                           :disabled="isViewMode"
@@ -85,14 +89,16 @@
                           placeholder="Buscar producto..."
                           @producto-seleccionado="(p) => onProductoSeleccionado(p, idx)"
                         />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 mb-1">Cantidad</label>
-                    <input type="number" v-model.number="item.cantidad" :disabled="isViewMode" min="1" class="w-full px-3 py-2 rounded border" />
+                  <div class="flex flex-col items-center md:col-span-1">
+                    <label class="block text-sm text-gray-700 mb-1 text-center">Cantidad</label>
+                    <input type="number" v-model.number="item.cantidad" :disabled="isViewMode" min="1" class="w-full px-3 py-2 rounded border text-center" />
                   </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 mb-1">Precio Cobrado</label>
-                    <input type="number" step="0.01" v-model.number="item.precio_cobrado" :disabled="isViewMode" class="w-full px-3 py-2 rounded border" />
+                  <div class="flex flex-col items-center md:col-span-1">
+                    <label class="block text-sm text-gray-700 mb-1 text-center">Precio Cobrado</label>
+                    <input type="number" step="0.01" v-model.number="item.precio_cobrado" :disabled="isViewMode" class="w-full px-3 py-2 rounded border text-center" />
                   </div>
                 </div>
                 <div class="flex items-start md:items-center md:ml-4">
@@ -311,6 +317,26 @@ function onProductoSeleccionado(p, idx) {
   if (idx === ventas.value.length - 1) {
     addVenta();
   }
+}
+
+function getItemImageSrc(item) {
+  try {
+    if (item && item.productoObj && item.productoObj.foto) {
+      const f = item.productoObj.foto;
+      if (typeof f === 'string' && (f.startsWith('http') || f.startsWith('data:'))) return f;
+      return `${config.public.backendHost}${f}`;
+    }
+  } catch (e) {
+    // ignore and fallback
+  }
+  return '/image.png';
+}
+
+function onImgError(e) {
+  try {
+    e.target.src = '/image.png';
+    e.target.style.background = 'white';
+  } catch (err) {}
 }
 
 function close() {

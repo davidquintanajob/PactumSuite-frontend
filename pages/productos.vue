@@ -117,6 +117,7 @@
       </div>
       <DataTable :columns="visibleProductosColumns" :items="productosData" :actions="visibleProductosActions"
         :total-items="totalProductos" :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
+        :is-show-photos="true"
         @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
     <!-- Sección de Ventas -->
@@ -567,7 +568,7 @@ const handleSubmit = async (producto) => {
     const url = isEditing.value
       ? `${config.public.backendHost}/Producto/updateProducto/${selectedProducto.value.id_producto}`
       : `${config.public.backendHost}/Producto/createProducto`;
-
+    
     const response = await fetch(url, {
       method: isEditing.value ? 'PUT' : 'POST',
       headers: {

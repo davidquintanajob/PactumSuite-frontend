@@ -68,6 +68,62 @@
             class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Ingrese el tipo de producto" />
           </div>
+            <!-- Foto (drag & drop) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Foto</label>
+              <div
+                class="relative mt-2">
+                <div
+                  :class="['w-full h-40 rounded border-dashed border-2 flex items-center justify-center bg-gray-50', isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300']"
+                  @dragover.prevent="handleDragOver"
+                  @dragleave.prevent="handleDragLeave"
+                  @drop.prevent="handleDrop">
+                  <input ref="hiddenFileInput" type="file" accept="image/*" class="hidden" @change="handleFileChange" :disabled="isViewing || isLoading" />
+
+                  <div v-if="showCamera" class="w-full h-full flex flex-col items-center justify-center gap-3">
+                    <video ref="videoRef" class="w-full h-full object-contain rounded" autoplay playsinline></video>
+                    <div class="flex items-center justify-center gap-2">
+                      <button type="button" @click="takePhoto" :disabled="isViewing || isLoading"
+                        class="px-4 py-2 bg-primary text-white rounded shadow">Tomar foto</button>
+                      <button type="button" @click="cancelCamera" :disabled="isViewing || isLoading"
+                        class="px-4 py-2 bg-white border rounded">Cancelar</button>
+                    </div>
+                  </div>
+
+                  <div v-else-if="!fotoBase64 && !fotoLoading" class="text-center px-4">
+                    <p class="text-sm text-gray-500 mb-2">Arrastra la foto aquí</p>
+                    <div class="flex items-center justify-center gap-2">
+                      <button type="button" @click="triggerFileInput" :disabled="isViewing || isLoading"
+                        class="px-4 py-2 bg-primary text-white rounded shadow flex items-center gap-2">
+                        Elegir foto
+                      </button>
+                      <button type="button" @click="openCamera" :disabled="isViewing || isLoading"
+                        class="px-3 py-2 bg-white border rounded flex items-center gap-2">
+                        <img src="/camera.png" alt="cam" class="w-5 h-5 bg-white rounded" />
+                        <span class="text-sm text-gray-700">Cámara</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-else-if="fotoLoading" class="flex items-center justify-center w-full h-full">
+                    <svg class="animate-spin h-8 w-8 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </div>
+
+                  <div v-else class="w-full h-full flex items-center justify-center p-2">
+                    <img :src="fotoBase64" alt="Previsualización" class="max-h-full object-contain rounded" />
+                  </div>
+                </div>
+
+                <!-- Botón eliminar (X) en esquina cuando hay imagen -->
+                <button v-if="fotoBase64" type="button" @click="removeImage"
+                  class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow">
+                  <span class="text-sm font-bold">×</span>
+                </button>
+              </div>
+            </div>
           <!-- Cantidad en Existencia -->
           <div v-if="isEditing || isViewing">
             <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad en Existencia</label>
@@ -149,6 +205,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue';
+import { useRuntimeConfig } from '#app';
 import MessageBanner from './MessageBanner.vue';
 
 const props = defineProps({
@@ -168,6 +225,18 @@ const formData = ref({
   cantidadExistencia: 0,
   costo: 0
 });
+
+// Imagen (base64)
+const fotoBase64 = ref(null);
+const fotoName = ref(null);
+const fotoUserProvided = ref(false);
+const isDragOver = ref(false);
+const hiddenFileInput = ref(null);
+const fotoLoading = ref(false);
+const config = useRuntimeConfig();
+const showCamera = ref(false);
+const videoRef = ref(null);
+const streamRef = ref(null);
 
 // Computed para detectar si el usuario logueado tiene rol 'Vendedor'
 const isVendedor = computed(() => {
@@ -198,6 +267,20 @@ watch(() => props.producto, (producto) => {
       cantidadExistencia: producto.cantidadExistencia || 0,
       costo: producto.costo || 0
     };
+    // mantener foto existente si la hay (asegurar URL completa)
+    if (producto.foto) {
+      if (typeof producto.foto === 'string' && (producto.foto.startsWith('http') || producto.foto.startsWith('data:'))) {
+        fotoBase64.value = producto.foto;
+      } else {
+        fotoBase64.value = `${config.public.backendHost}${producto.foto}`;
+      }
+      fotoName.value = 'imagen_producto';
+      fotoUserProvided.value = false; // no fue provista en la sesión actual
+    } else {
+      fotoBase64.value = null;
+      fotoName.value = null;
+      fotoUserProvided.value = false;
+    }
   } else {
     formData.value = {
       codigo: '',
@@ -209,8 +292,25 @@ watch(() => props.producto, (producto) => {
       cantidadExistencia: 0,
       costo: 0
     };
+    fotoBase64.value = null;
+    fotoName.value = null;
+    fotoUserProvided.value = false;
   }
 }, { immediate: true });
+
+// Resetear imagen cuando se cierra el modal
+watch(() => props.modelValue, (val) => {
+  if (val) {
+    // cada vez que se abre el modal, recargar la imagen del producto (si existe)
+    loadProductoImage();
+  } else {
+    fotoBase64.value = null;
+    fotoName.value = null;
+    fotoUserProvided.value = false;
+    fotoLoading.value = false;
+    stopCamera();
+  }
+});
 
 const handleSubmit = async () => {
   errorMsg.value = '';
@@ -218,9 +318,6 @@ const handleSubmit = async () => {
   // Exigir costo solo si el usuario NO es Vendedor
   if (!isVendedor.value) {
     requiredFields.push('costo');
-  }
-  if (props.isEditing) {
-    requiredFields.push('cantidadExistencia');
   }
   const missingFields = requiredFields.filter(field => !formData.value[field]);
   if (missingFields.length > 0) {
@@ -239,7 +336,7 @@ const handleSubmit = async () => {
   try {
     // Emitir el evento submit
     await new Promise((resolve, reject) => {
-      emit('submit', {
+      const payload = {
         codigo: formData.value.codigo,
         nombre: formData.value.nombre,
         precio: Number(formData.value.precio),
@@ -248,7 +345,10 @@ const handleSubmit = async () => {
         tipoProducto: formData.value.tipoProducto,
         cantidadExistencia: props.isEditing ? Number(formData.value.cantidadExistencia) : 0,
         costo: Number(formData.value.costo)
-      });
+      };
+      // Incluir foto sólo si el usuario la proporcionó en esta sesión
+      if (fotoUserProvided.value && fotoBase64.value) payload.foto = fotoBase64.value;
+      emit('submit', payload);
       // Simular un pequeño delay para que el usuario vea el mensaje
       setTimeout(resolve, 100);
     });
@@ -262,6 +362,195 @@ const handleSubmit = async () => {
     }, 500);
   }
 };
+
+function handleFileChange(event) {
+  const file = event.target && event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+  fotoLoading.value = true;
+  // Comprimir y convertir a base64
+  compressImage(file).then(dataUrl => {
+    fotoBase64.value = dataUrl;
+    fotoName.value = file.name;
+    fotoUserProvided.value = true;
+  }).catch(() => {
+    errorMsg.value = 'No se pudo procesar la imagen seleccionada.';
+  }).finally(() => {
+    fotoLoading.value = false;
+  });
+}
+
+function removeImage() {
+  fotoBase64.value = null;
+  fotoName.value = null;
+  fotoUserProvided.value = true; // el usuario modificó la imagen (la removió)
+}
+
+function triggerFileInput() {
+  if (hiddenFileInput.value) hiddenFileInput.value.click();
+}
+
+function handleDragOver() {
+  isDragOver.value = true;
+}
+
+function handleDragLeave() {
+  isDragOver.value = false;
+}
+
+function handleDrop(event) {
+  isDragOver.value = false;
+  const file = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files[0] : null;
+  if (!file) return;
+  fotoLoading.value = true;
+  compressImage(file).then(dataUrl => {
+    fotoBase64.value = dataUrl;
+    fotoName.value = file.name;
+    fotoUserProvided.value = true;
+  }).catch(() => {
+    errorMsg.value = 'No se pudo procesar la imagen arrastrada.';
+  }).finally(() => {
+    fotoLoading.value = false;
+  });
+}
+
+// Cámara: abrir, capturar y parar
+async function openCamera() {
+  showCamera.value = true;
+  await startCamera();
+}
+
+async function startCamera() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    streamRef.value = stream;
+    if (videoRef.value) videoRef.value.srcObject = stream;
+    if (videoRef.value) await videoRef.value.play();
+  } catch (e) {
+    console.error('No se pudo acceder a la cámara', e);
+    showCamera.value = false;
+  }
+}
+
+function stopCamera() {
+  try {
+    if (streamRef.value) {
+      streamRef.value.getTracks().forEach(t => t.stop());
+      streamRef.value = null;
+    }
+    if (videoRef.value && videoRef.value.pause) videoRef.value.pause();
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function takePhoto() {
+  if (!videoRef.value) return;
+  const video = videoRef.value;
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(async (blob) => {
+      if (!blob) return reject(new Error('no_blob'));
+      try {
+        // convertir blob a file y comprimir
+        const file = new File([blob], 'camera.jpg', { type: blob.type || 'image/jpeg' });
+        const dataUrl = await compressImage(file);
+        fotoBase64.value = dataUrl;
+        fotoName.value = file.name;
+        fotoUserProvided.value = true;
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    }, 'image/jpeg');
+  }).finally(() => {
+    stopCamera();
+    showCamera.value = false;
+  });
+}
+
+function cancelCamera() {
+  stopCamera();
+  showCamera.value = false;
+}
+
+// Comprimir imagen usando canvas. Redimensiona si es mayor a 1280px y exporta a webp para reducir peso.
+function compressImage(file) {
+  const maxDim = 1280;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read_error'));
+    reader.onload = (e) => {
+      img.onload = () => {
+        let { width, height } = img;
+        let scale = 1;
+        if (width > maxDim || height > maxDim) {
+          scale = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        // Exportar a webp para buena compresión; calidad alta para mantener nitidez
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error('compress_error'));
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = () => reject(new Error('read_blob_error'));
+          fr.readAsDataURL(blob);
+        }, 'image/webp', 0.9);
+      };
+      img.onerror = () => reject(new Error('image_load_error'));
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Cargar la imagen del producto (remota o data) cada vez que se abre el modal
+function loadProductoImage() {
+  const producto = props.producto || {};
+  if (producto && producto.foto) {
+    const src = (typeof producto.foto === 'string' && (producto.foto.startsWith('http') || producto.foto.startsWith('data:')))
+      ? producto.foto
+      : `${config.public.backendHost}${producto.foto}`;
+    // Si es data URL, asignar directamente
+    if (src.startsWith('data:')) {
+      fotoBase64.value = src;
+      fotoUserProvided.value = false;
+      fotoLoading.value = false;
+      return;
+    }
+    fotoLoading.value = true;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      fotoBase64.value = src;
+      fotoUserProvided.value = false;
+      fotoLoading.value = false;
+    };
+    img.onerror = () => {
+      fotoBase64.value = null;
+      fotoUserProvided.value = false;
+      fotoLoading.value = false;
+    };
+    img.src = src;
+  } else {
+    fotoBase64.value = null;
+    fotoUserProvided.value = false;
+    fotoLoading.value = false;
+  }
+}
 
 function renderEstado(value) {
   if (!value) return '';

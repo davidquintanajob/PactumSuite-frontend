@@ -91,6 +91,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+const config = useRuntimeConfig()
 import Navbar from '@/components/Navbar.vue'
 
 const cambio = ref('')
@@ -118,9 +119,9 @@ onMounted(() => {
 const fetchExchangeRate = async () => {
   loadingRate.value = true
   try {
-    const response = await fetch('/exchange-rate')
+    const response = await fetch(`${config.public.backendHost}/exchange-rate`)
     if (!response.ok) {
-      console.warn('No se pudo obtener la tasa desde /exchange-rate')
+      console.warn('No se pudo obtener la tasa desde ' + `${config.public.backendHost}/exchange-rate`)
       return
     }
     const data = await response.json()
@@ -142,7 +143,7 @@ const save = async () => {
   saving.value = true
   try {
     const payload = { cambio_moneda: Number(cambio.value) }
-    await fetch('/config', {
+    await fetch(`${config.public.backendHost}/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

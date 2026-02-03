@@ -118,50 +118,14 @@ onMounted(() => {
 const fetchExchangeRate = async () => {
   loadingRate.value = true
   try {
-    // Intentar obtener directamente desde la página objetivo y parsear el HTML
-    const remoteUrl = 'https://eltoque.com/precio-del-dolar-en-el-mercado-informal-en-cuba-hoy'
-    try {
-      const r = await fetch(remoteUrl)
-      if (r.ok) {
-        const html = await r.text()
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(html, 'text/html')
-
-        const parsePriceFromDoc = (doc, flagClass) => {
-          const flag = doc.querySelector('.' + flagClass)
-          if (!flag) return null
-          const row = flag.closest('tr')
-          if (!row) return null
-          const priceEl = row.querySelector('.price-text')
-          if (!priceEl) return null
-          const raw = priceEl.textContent || ''
-          const cleaned = raw.replace(/[^0-9.,-]/g, '').trim().replace(',', '.')
-          const n = parseFloat(cleaned)
-          return Number.isFinite(n) ? n : null
-        }
-
-        const eur = parsePriceFromDoc(doc, 'flag-icon-eu')
-        const usd = parsePriceFromDoc(doc, 'flag-icon-us')
-        if (eur != null) currentEurRate.value = eur
-        if (usd != null) currentUsdRate.value = usd
-        // Si encontramos al menos USD, retornamos
-        if (usd != null || eur != null) return
-      }
-    } catch (err) {
-      // Probable CORS o bloqueo; caeremos al endpoint interno
-      console.warn('No se pudo leer la página remota directamente (CORS?), usando fallback:', err)
+    const response = await fetch('/exchange-rate')
+    if (!response.ok) {
+      console.warn('No se pudo obtener la tasa desde /exchange-rate')
+      return
     }
-
-    // Fallback: pedir al endpoint del backend (si existe)
-    const response = await fetch('/api/exchange-rate')
-    if (response.ok) {
-      const data = await response.json()
-      // Si solo se devuelve rate USD, lo ponemos en currentUsdRate
-      if (data.rate) currentUsdRate.value = data.rate
-      if (data.eur) currentEurRate.value = data.eur
-    } else {
-      console.warn('No se pudo obtener la tasa actual desde /api/exchange-rate')
-    }
+    const data = await response.json()
+    if (data.rate != null) currentUsdRate.value = Number(data.rate)
+    if (data.eur != null) currentEurRate.value = Number(data.eur)
   } catch (error) {
     console.error('Error al obtener tasa:', error)
   } finally {

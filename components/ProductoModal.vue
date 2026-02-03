@@ -43,16 +43,29 @@
           <!-- Precio -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Precio</label>
-            <input v-model="formData.precio" type="number" step="0.01" required :readonly="isViewing" :disabled="isViewing || isLoading"
+            <input v-model="formData.precio" @input="onPrecioInput" type="number" step="any" :readonly="isViewing" :disabled="isViewing || isLoading"
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ingrese el precio" />
           </div>
             <!-- Costo -->
             <div v-if="!isVendedor">
               <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
-              <input v-model="formData.costo" type="number" step="0.01" required :readonly="isViewing" :disabled="isViewing || isLoading"
+              <input v-model="formData.costo" @input="onCostoInput" type="number" step="any" :readonly="isViewing" :disabled="isViewing || isLoading"
                 class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ingrese el costo" />
+            </div>
+            <!-- Precio USD y Costo USD (solo administradores) -->
+            <div v-if="isAdmin">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Precio USD</label>
+              <input v-model="formData.precio_usd" @input="onPrecioUsdInput" type="number" step="any" :readonly="isViewing" :disabled="isViewing || isLoading"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ingrese el precio en USD" />
+            </div>
+            <div v-if="isAdmin">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Costo USD</label>
+              <input v-model="formData.costo_usd" @input="onCostoUsdInput" type="number" step="any" :readonly="isViewing" :disabled="isViewing || isLoading"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ingrese el costo en USD" />
             </div>
           <!-- Unidad de Medida -->
           <div>
@@ -223,8 +236,19 @@ const formData = ref({
   unidadMedida: '',
   tipoProducto: '',
   cantidadExistencia: 0,
-  costo: 0
+  costo: 0,
+  precio_usd: '',
+  costo_usd: ''
 });
+
+// cambio de moneda desde config en localStorage
+const cambioMoneda = ref(1);
+
+// Flags para evitar bucles entre watchers
+const updatingPrecio = ref(false);
+const updatingPrecioUsd = ref(false);
+const updatingCosto = ref(false);
+const updatingCostoUsd = ref(false);
 
 // Imagen (base64)
 const fotoBase64 = ref(null);
@@ -251,6 +275,20 @@ const isVendedor = computed(() => {
     return false;
   }
 });
+// Computed para detectar si el usuario logueado tiene rol 'Administrador'
+const isAdmin = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    const role = String(rawRole).trim().toLowerCase();
+    return role === 'administrador' || role === 'admin';
+  } catch (e) {
+    return false;
+  }
+});
 const errorMsg = ref('');
 const isLoading = ref(false);
 const loadingBanner = ref(null);
@@ -265,7 +303,9 @@ watch(() => props.producto, (producto) => {
       unidadMedida: producto.unidadMedida || '',
       tipoProducto: producto.tipoProducto || '',
       cantidadExistencia: producto.cantidadExistencia || 0,
-      costo: producto.costo || 0
+      costo: producto.costo || 0,
+      precio_usd: producto.precio_usd !== undefined && producto.precio_usd !== null ? String(producto.precio_usd) : '',
+      costo_usd: producto.costo_usd !== undefined && producto.costo_usd !== null ? String(producto.costo_usd) : ''
     };
     // mantener foto existente si la hay (asegurar URL completa)
     if (producto.foto) {
@@ -290,7 +330,9 @@ watch(() => props.producto, (producto) => {
       unidadMedida: '',
       tipoProducto: '',
       cantidadExistencia: 0,
-      costo: 0
+      costo: 0,
+      precio_usd: '',
+      costo_usd: ''
     };
     fotoBase64.value = null;
     fotoName.value = null;
@@ -303,6 +345,20 @@ watch(() => props.modelValue, (val) => {
   if (val) {
     // cada vez que se abre el modal, recargar la imagen del producto (si existe)
     loadProductoImage();
+    // cargar cambio de moneda desde localStorage config
+    try {
+      const cfgStr = localStorage.getItem('config');
+      if (cfgStr) {
+        const cfg = JSON.parse(cfgStr);
+        const cm = Number(cfg?.cambio_moneda);
+        if (!isNaN(cm) && cm > 0) cambioMoneda.value = cm;
+        else cambioMoneda.value = 1;
+      } else {
+        cambioMoneda.value = 1;
+      }
+    } catch (e) {
+      cambioMoneda.value = 1;
+    }
   } else {
     fotoBase64.value = null;
     fotoName.value = null;
@@ -312,13 +368,58 @@ watch(() => props.modelValue, (val) => {
   }
 });
 
+// Conversiones solo al tipear: handlers ligados a los inputs
+function onPrecioInput(e) {
+  const val = e && e.target ? e.target.value : formData.value.precio;
+  const cambio = Number(cambioMoneda.value) || 1;
+  const n = Number(val);
+  if (isNaN(n)) {
+    formData.value.precio_usd = '';
+    return;
+  }
+  const usd = n / cambio;
+  formData.value.precio_usd = usd.toFixed(5);
+}
+
+function onPrecioUsdInput(e) {
+  const val = e && e.target ? e.target.value : formData.value.precio_usd;
+  const cambio = Number(cambioMoneda.value) || 1;
+  const n = Number(val);
+  if (isNaN(n)) {
+    formData.value.precio = '';
+    return;
+  }
+  const localVal = n * cambio;
+  formData.value.precio = localVal.toFixed(2);
+}
+
+function onCostoInput(e) {
+  const val = e && e.target ? e.target.value : formData.value.costo;
+  const cambio = Number(cambioMoneda.value) || 1;
+  const n = Number(val);
+  if (isNaN(n)) {
+    formData.value.costo_usd = '';
+    return;
+  }
+  const usd = n / cambio;
+  formData.value.costo_usd = usd.toFixed(5);
+}
+
+function onCostoUsdInput(e) {
+  const val = e && e.target ? e.target.value : formData.value.costo_usd;
+  const cambio = Number(cambioMoneda.value) || 1;
+  const n = Number(val);
+  if (isNaN(n)) {
+    formData.value.costo = '';
+    return;
+  }
+  const localVal = n * cambio;
+  formData.value.costo = localVal.toFixed(2);
+}
+
 const handleSubmit = async () => {
   errorMsg.value = '';
-  const requiredFields = ['codigo', 'nombre', 'precio', 'unidadMedida', 'tipoProducto'];
-  // Exigir costo solo si el usuario NO es Vendedor
-  if (!isVendedor.value) {
-    requiredFields.push('costo');
-  }
+  const requiredFields = ['codigo', 'nombre', 'unidadMedida', 'tipoProducto'];
   const missingFields = requiredFields.filter(field => !formData.value[field]);
   if (missingFields.length > 0) {
     errorMsg.value = 'Los campos ' + missingFields.join(', ') + ' son obligatorios.';
@@ -339,13 +440,23 @@ const handleSubmit = async () => {
       const payload = {
         codigo: formData.value.codigo,
         nombre: formData.value.nombre,
-        precio: Number(formData.value.precio),
         nota: formData.value.nota,
         unidadMedida: formData.value.unidadMedida,
         tipoProducto: formData.value.tipoProducto,
-        cantidadExistencia: props.isEditing ? Number(formData.value.cantidadExistencia) : 0,
-        costo: Number(formData.value.costo)
+        cantidadExistencia: props.isEditing ? Number(formData.value.cantidadExistencia) : 0
       };
+      // Incluir precio y costo solo si el usuario ingresó valores válidos
+      if (formData.value.precio !== '' && formData.value.precio !== null && !isNaN(Number(formData.value.precio))) {
+        payload.precio = Number(formData.value.precio);
+      }
+      if (formData.value.costo !== '' && formData.value.costo !== null && !isNaN(Number(formData.value.costo))) {
+        payload.costo = Number(formData.value.costo);
+      }
+      // Incluir USD solo si el usuario es administrador y digitó un valor
+      if (isAdmin.value) {
+        if (formData.value.precio_usd !== '' && formData.value.precio_usd !== null && !isNaN(Number(formData.value.precio_usd))) payload.precio_usd = Number(formData.value.precio_usd);
+        if (formData.value.costo_usd !== '' && formData.value.costo_usd !== null && !isNaN(Number(formData.value.costo_usd))) payload.costo_usd = Number(formData.value.costo_usd);
+      }
       // Incluir foto sólo si el usuario la proporcionó en esta sesión
       if (fotoUserProvided.value && fotoBase64.value) payload.foto = fotoBase64.value;
       emit('submit', payload);

@@ -17,10 +17,6 @@
               <p class="mt-1 text-sm text-gray-900">{{ entrada.producto?.nombre || 'N/A' }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Código</label>
-              <p class="mt-1 text-sm text-gray-900">{{ entrada.producto?.codigo || 'N/A' }}</p>
-            </div>
-            <div>
               <label class="block text-sm font-medium text-gray-700">Unidad de Medida</label>
               <p class="mt-1 text-sm text-gray-900">{{ entrada.producto?.unidadMedida || 'N/A' }}</p>
             </div>
@@ -31,6 +27,10 @@
             <div>
               <label class="block text-sm font-medium text-gray-700">Precio Unitario</label>
               <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.producto?.precio || 0).toFixed(2) }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Costo USD</label>
+              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.producto?.costo_usd || 0).toFixed(5) }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Existencia Actual</label>
@@ -52,6 +52,10 @@
             <div>
               <label class="block text-sm font-medium text-gray-700">Costo</label>
               <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.costo || 0).toFixed(2) }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Costo USD</label>
+              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.costo_usd || entrada.producto?.costo_usd || 0).toFixed(5) }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Total</label>
@@ -155,8 +159,20 @@
             <input type="date" v-model="form.fecha" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Costo</label>
+            <input type="number" :step="'any'" :value="form.costo" @input="onCostoInput" placeholder="Costo..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Costo USD</label>
+            <input type="number" :step="'any'" :value="form.costo_usd" @input="onCostoUsdInput" placeholder="Costo USD..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-            <input type="number" v-model.number="form.cantidadEntrada" min="0" step="0.01" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+            <input type="number" v-model.number="form.cantidadEntrada" min="0" step="any" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Costos * Cantidad</label>
+            <input type="text" readonly :value="`CUP: ${totalCUP} - USD: ${totalUSD}`" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-700" />
           </div>
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
@@ -170,7 +186,7 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <div class="text-sm text-gray-600">Existencia</div>
-              <div class="text-sm font-semibold">{{ selectedProducto.cantidadExistencia }}</div>
+              <div class="text-sm font-semibold">{{ selectedProducto.cantidadExistencia || 0 }}</div>
             </div>
             <div>
               <div class="text-sm text-gray-600">Unidad</div>
@@ -187,6 +203,10 @@
             <div>
               <div class="text-sm text-gray-600">Costo</div>
               <div class="text-sm font-semibold">{{ Number(selectedProducto.costo || 0).toFixed(2) }}</div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600">Costo USD</div>
+              <div class="text-sm font-semibold">{{ Number(selectedProducto.costo_usd || 0).toFixed(5) }}</div>
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -216,6 +236,7 @@
 </template>
 
 <script setup>
+import { ref, reactive, watch, computed } from 'vue';
 import Modal from '@/components/Modal.vue';
 import SelectSearchAPI from '@/components/SelectSearchAPI.vue';
 
@@ -228,9 +249,36 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'submit']);
 
-const form = reactive({ id_producto: null, cantidadEntrada: null, nota: '', fecha: '' });
+const form = reactive({ id_producto: null, cantidadEntrada: null, nota: '', fecha: '', costo: null, costo_usd: null });
 const selectedProducto = ref(null);
 const errorList = ref([]);
+
+const cambioMoneda = ref(1);
+
+const isAdmin = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'admin';
+  } catch (e) {
+    return false;
+  }
+});
+
+const totalCUP = computed(() => {
+  const q = Number(form.cantidadEntrada) || 0;
+  const c = Number(form.costo) || 0;
+  return (q * c).toFixed(2);
+});
+
+const totalUSD = computed(() => {
+  const q = Number(form.cantidadEntrada) || 0;
+  const cu = Number(form.costo_usd) || 0;
+  return (q * cu).toFixed(5);
+});
 
 watch(() => props.entrada, (val) => {
   if (val && Object.keys(val).length) {
@@ -238,18 +286,25 @@ watch(() => props.entrada, (val) => {
     form.cantidadEntrada = val.cantidadEntrada || null;
     form.nota = val.nota || '';
     form.fecha = val.fecha ? val.fecha.substring(0,10) : '';
+    form.costo = val.costo != null ? val.costo : (val.producto?.costo != null ? val.producto.costo : null);
+    form.costo_usd = val.costo_usd != null ? val.costo_usd : (val.producto?.costo_usd != null ? val.producto.costo_usd : null);
     selectedProducto.value = val.producto || null;
   } else {
     form.id_producto = null;
     form.cantidadEntrada = null;
     form.nota = '';
     form.fecha = '';
+    form.costo = null;
+    form.costo_usd = null;
     selectedProducto.value = null;
   }
 }, { immediate: true });
 
 function onProductoSeleccionado(producto) {
   selectedProducto.value = producto;
+  // prefill costo/costo_usd from producto but do NOT trigger conversions
+  form.costo = producto?.costo != null ? producto.costo : null;
+  form.costo_usd = producto?.costo_usd != null ? producto.costo_usd : null;
 }
 
 async function onSubmit() {
@@ -258,7 +313,64 @@ async function onSubmit() {
   if (form.cantidadEntrada == null || Number(form.cantidadEntrada) <= 0) errorList.value.push('La cantidad debe ser mayor que 0');
   if (!form.fecha) errorList.value.push('Debe seleccionar una fecha');
   if (errorList.value.length) return;
-  emit('submit', { id_producto: form.id_producto, cantidadEntrada: Number(form.cantidadEntrada), nota: form.nota, fecha: form.fecha });
+  const payload = { id_producto: form.id_producto, cantidadEntrada: Number(form.cantidadEntrada), nota: form.nota, fecha: form.fecha };
+  // include costo and costo_usd only when valid numbers
+  if (form.costo !== null && form.costo !== '') {
+    const c = Number(form.costo);
+    if (!isNaN(c)) payload.costo = c;
+  }
+  if (form.costo_usd !== null && form.costo_usd !== '') {
+    const cu = Number(form.costo_usd);
+    if (!isNaN(cu)) payload.costo_usd = cu;
+  }
+  emit('submit', payload);
+}
+
+// load cambio_moneda when modal opens
+watch(() => props.modelValue, (open) => {
+  if (open) {
+    try {
+      const cfg = localStorage.getItem('config');
+      if (cfg) {
+        const parsed = JSON.parse(cfg);
+        if (parsed && parsed.cambio_moneda) cambioMoneda.value = Number(parsed.cambio_moneda) || 1;
+      }
+    } catch (e) {
+      cambioMoneda.value = 1;
+    }
+
+    // Si el modal se abre en modo crear (no editar, no ver), limpiar todos los campos
+    if (!props.isEditing && !props.isViewing) {
+      form.id_producto = null;
+      form.cantidadEntrada = null;
+      form.nota = '';
+      form.fecha = '';
+      form.costo = null;
+      form.costo_usd = null;
+      selectedProducto.value = null;
+      errorList.value = [];
+    }
+  } else {
+    errorList.value = [];
+  }
+});
+
+function onCostoInput(e) {
+  const val = e.target.value;
+  form.costo = val;
+  if (!val) return;
+  const n = Number(val);
+  if (isNaN(n) || !cambioMoneda.value) return;
+  form.costo_usd = (n / cambioMoneda.value).toFixed(5);
+}
+
+function onCostoUsdInput(e) {
+  const val = e.target.value;
+  form.costo_usd = val;
+  if (!val) return;
+  const n = Number(val);
+  if (isNaN(n) || !cambioMoneda.value) return;
+  form.costo = (n * cambioMoneda.value).toFixed(2);
 }
 
 watch(() => props.modelValue, (open) => {

@@ -416,6 +416,8 @@ const productosColumns = [
   { key: 'unidadMedida', label: 'Unidad de Medida' },
   { key: 'precio', label: 'Precio' },
   { key: 'costo', label: 'Costo' },
+  { key: 'precio_usd', label: 'Precio USD' },
+  { key: 'costo_usd', label: 'Costo USD' },
   { key: 'tipoProducto', label: 'Tipo de Producto' },
   { key: 'cantidadExistencia', label: 'Existencia' }
 ];
@@ -480,6 +482,21 @@ const isVendedor = computed(() => {
   }
 });
 
+// Computed: determinar si el usuario actual es Administrador
+const isAdmin = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    const role = String(rawRole).trim().toLowerCase();
+    return role === 'administrador' || role === 'admin';
+  } catch (e) {
+    return false;
+  }
+});
+
 // Computed: determinar si el usuario actual es Invitado
 const isInvitado = computed(() => {
   try {
@@ -496,7 +513,13 @@ const isInvitado = computed(() => {
 
 // Columnas y acciones visibles según rol
 const visibleProductosColumns = computed(() => {
-  return productosColumns.filter(col => !(isVendedor.value && col.key === 'costo'));
+  return productosColumns.filter(col => {
+    // Ocultar costo si es vendedor
+    if (isVendedor.value && col.key === 'costo') return false;
+    // Mostrar campos USD solo a administradores
+    if (!isAdmin.value && (col.key === 'precio_usd' || col.key === 'costo_usd')) return false;
+    return true;
+  });
 });
 
 const visibleProductosActions = computed(() => {
@@ -533,7 +556,12 @@ const fetchProductos = async (page = currentPage.value, limit = itemsPorPage.val
       body: JSON.stringify(body)
     });
     const data = await res.json();
-    productosData.value = Array.isArray(data.data) ? data.data.map(p => ({ ...p, precio: Number(p.precio).toFixed(2) })) : [];
+    productosData.value = Array.isArray(data.data) ? data.data.map(p => ({
+      ...p,
+      precio: p.precio !== undefined && p.precio !== null ? Number(p.precio).toFixed(2) : '',
+      precio_usd: p.precio_usd !== undefined && p.precio_usd !== null ? Number(p.precio_usd).toFixed(2) : '',
+      costo_usd: p.costo_usd !== undefined && p.costo_usd !== null ? Number(p.costo_usd).toFixed(2) : ''
+    })) : [];
     totalProductos.value = data.pagination?.total || 0;
   } catch (error) {
     productosData.value = [];
@@ -808,13 +836,25 @@ async function exportToExcel() {
     const data = await response.json();
 
     // Mapear los datos a las columnas requeridas en el orden especificado
-    const exportData = data.data.map(item => ({
-      'Código': item.codigo,
-      'Nombre': item.nombre,
-      'Unidad de Medida': item.unidadMedida,
-      'Precio': Number(item.precio).toFixed(2),
-      'Nota': item.nota
-    }));
+    const exportData = data.data.map(item => {
+      const row = {
+        'Código': item.codigo,
+        'Nombre': item.nombre,
+        'Unidad de Medida': item.unidadMedida,
+        'Precio': Number(item.precio).toFixed(2),
+        'Costo': Number(item.costo).toFixed(2),
+        'Cantidad Existencia': item.cantidadExistencia,
+        'Nota': item.nota
+      };
+
+      // Si el usuario actual NO es Vendedor, incluir las columnas USD
+      if (!isVendedor.value) {
+        row['Precio USD'] = item.precio_usd !== undefined ? Number(item.precio_usd).toFixed(2) : '';
+        row['Costo USD'] = item.costo_usd !== undefined ? Number(item.costo_usd).toFixed(2) : '';
+      }
+
+      return row;
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();

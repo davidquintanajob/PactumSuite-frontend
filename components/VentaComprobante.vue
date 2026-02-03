@@ -70,6 +70,7 @@ const props = defineProps({ modelValue: { type: Boolean, required: true }, data:
 const emit = defineEmits(['update:modelValue']);
 
 const sizes = [
+  { label: 'Térmica 80mm (80×200 mm)', value: 'Thermal80' },
   { label: 'A4 (8.27×11.69 in)', value: 'A4' },
   { label: 'A5 (5.83×8.27 in)', value: 'A5' },
   { label: 'Letter (8.5×11 in)', value: 'Letter' },
@@ -77,7 +78,8 @@ const sizes = [
   { label: '5×7 (5×7 in)', value: '5x7' },
   { label: '8×10 (8×10 in)', value: '8x10' }
 ];
-const selectedSize = ref('A4');
+// Por defecto usamos el tamaño térmico 80mm para impresoras de tickets
+const selectedSize = ref('Thermal80');
 const printSection = ref(null);
 
 // Physical sizes in mm (width, height)
@@ -89,6 +91,9 @@ const SIZE_MAP = {
   '5x7': [127, 177.8],
   '8x10': [203.2, 254]
 };
+// Añadimos mapa para la opción térmica 80mm (ancho x alto en mm)
+// reducir altura por defecto para impresoras térmicas (menos espacio en blanco)
+SIZE_MAP.Thermal80 = [80, 120];
 const SHRINK_MM = 6; // global shrink for margin buffer
 
 const scaleFactor = computed(() => {
@@ -122,6 +127,7 @@ function formatDate(s) { if (!s) return '-'; try { return new Date(s).toLocaleSt
 const pageStyle = computed(() => {
   // return exact CSS dimensions for the printable area (width x height in mm)
   switch (selectedSize.value) {
+    case 'Thermal80': return { width: '80mm', height: '200mm' };
     case 'A5': return { width: '148mm', height: '210mm' };
     case 'Letter': return { width: '216mm', height: '279mm' };
     case '4x6': return { width: '101.6mm', height: '152.4mm' }; // 4in x 6in
@@ -138,7 +144,23 @@ function createPrintWindow() {
   const w = window.open('', '_blank');
   if (!w) return null;
   const content = printSection.value ? printSection.value.innerHTML : '';
-  const css = `body{font-family: Helvetica,Arial,sans-serif;padding:20px;color:#111;} table{width:100%;border-collapse:collapse;} th,td{padding:8px;border-bottom:1px solid #eee;} .text-right{text-align:right;}`;
+  // compute selected physical dimensions (mm)
+  const base = SIZE_MAP[selectedSize.value] || SIZE_MAP.A4;
+  const pageW = base[0];
+  const pageH = base[1];
+  // CSS: set @page size and remove default margins so small thermal sizes are respected
+  const css = `
+    @page { size: ${pageW}mm ${pageH}mm; margin: 0; }
+    html, body { width: ${pageW}mm; height: ${pageH}mm; margin: 0; padding: 0; }
+    /* reducir padding para que no quede tanto espacio en blanco arriba/abajo */
+    body{font-family: Helvetica,Arial,sans-serif;padding:3mm;color:#111;box-sizing:border-box}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{padding:4px;border-bottom:1px solid #eee}
+    .text-right{text-align:right}
+    /* ensure printed elements don't overflow */
+    * { box-sizing: border-box; }
+  `;
+
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${css}</style></head><body>${content}</body></html>`;
   w.document.open();
   w.document.write(html);

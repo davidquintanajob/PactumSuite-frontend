@@ -338,6 +338,7 @@ function onImgError(e) {
     e.target.style.background = 'white';
   } catch (err) {}
 }
+const cambioMoneda = ref(1);
 
 function close() {
   emit('update:modelValue', false);
@@ -687,13 +688,22 @@ async function submit() {
     const nowTs = Date.now();
     const nowStr = getLocalISOFromTimestamp(nowTs);
     // debug: timestamp used for all ventas
-    console.debug('VentaModalSell - fecha_hora used for submit:', nowStr);
+    try {
+      const cfg = localStorage.getItem('config');
+      if (cfg) {
+        const parsed = JSON.parse(cfg);
+        if (parsed && parsed.cambio_moneda) cambioMoneda.value = Number(parsed.cambio_moneda) || 1;
+      }
+    } catch (e) {
+      cambioMoneda.value = 1;
+    }
 
     const body = {
       nota: notaVenta.value || '',
       ventas: itemsToSend.map(v => ({
         id_producto: Number(v.id_producto),
         id_usuario: id_usuario,
+        cambioUSD_al_vender: cambioMoneda.value,
         cantidad: Number(v.cantidad) || 0,
         forma_pago: formaPago.value === 'transferencia' ? 'Transferencia' : 'Efectivo',
         costo_venta: v.productoObj ? Number(v.productoObj.costo || 0) : Number(v.costo_venta || 0),
@@ -702,11 +712,11 @@ async function submit() {
         fecha_hora: nowStr
       }))
     };
-
+    console.log(JSON.stringify(body,null,2));
+    
     // show loading
     isSubmitting.value = true;
     loadingBanner.value = { title: 'Creando ventas', description: 'Enviando datos al servidor...', type: 'info' };
-    console.log(JSON.stringify(body,null,2));
     
     try {
       const resp = await fetch(`${config.public.backendHost}/ListaVenta/createWithVentas`, {

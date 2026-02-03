@@ -241,6 +241,8 @@ const ventasColumns = computed(() => {
       { key: 'fecha', label: 'Fecha' },
       { key: 'hora', label: 'Hora' },
       { key: 'totalCobrado', label: 'Total Cobrado' },
+      // Mostrar TOTAL COBRADO USD solo si NO es Vendedor
+      ...(isVendedor.value ? [] : [{ key: 'totalCobradoUSD', label: 'TOTAL COBRADO USD' }]),
       {
         key: 'formaPago',
         label: 'Forma de Pago',
@@ -272,6 +274,8 @@ const ventasColumns = computed(() => {
     { key: 'productoNombre', label: 'Producto' },
     { key: 'cantidad', label: 'Cantidad' },
     { key: 'precio_cobrado', label: 'Precio Cobrado' },
+    // Mostrar columna USD en detallado solo si NO es Vendedor
+    ...(isVendedor.value ? [] : [{ key: 'totalUSD', label: 'TOTAL COBRADO USD' }]),
     { key: 'total', label: 'Total' },
     {
       key: 'forma_pago',
@@ -452,6 +456,20 @@ const isInvitado = computed(() => {
   }
 });
 
+// Computed: determinar si el usuario actual es Vendedor
+const isVendedor = computed(() => {
+  try {
+    const usuarioStr = localStorage.getItem('usuario');
+    if (!usuarioStr) return false;
+    const usuario = JSON.parse(usuarioStr);
+    const rawRole = usuario && (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) ? (usuario.rol || usuario.role || (usuario.perfil && usuario.perfil.rol) || (usuario.profile && usuario.profile.role)) : null;
+    if (!rawRole) return false;
+    return String(rawRole).trim().toLowerCase() === 'vendedor';
+  } catch (e) {
+    return false;
+  }
+});
+
 function selectViewMode(mode) {
   if (viewMode.value === mode) return;
   viewMode.value = mode;
@@ -512,6 +530,7 @@ async function fetchItems(page = 1, limit = 20) {
         let total = 0;
         const formas = new Set();
         let usuarioNombre = '';
+        let usdTotal = 0;
 
         ventas.forEach(v => {
           if (v.fecha_hora) {
@@ -523,6 +542,9 @@ async function fetchItems(page = 1, limit = 20) {
           const precio = parseFloat(v.precio_cobrado) || 0;
           const cantidad = Number(v.cantidad) || 0;
           total += precio * cantidad;
+          const cambio = parseFloat(v.cambioUSD_al_vender);
+          const usd = (cambio && cambio !== 0) ? (precio / cambio) : 0;
+          usdTotal += usd;
           if (v.forma_pago) formas.add(String(v.forma_pago).toLowerCase());
           if (v.usuario && v.usuario.nombre_usuario) usuarioNombre = v.usuario.nombre_usuario;
         });
@@ -554,6 +576,7 @@ async function fetchItems(page = 1, limit = 20) {
           hora: hora12,
           nota: item.nota || '',
           totalCobrado: total.toFixed(2),
+          totalCobradoUSD: usdTotal.toFixed(2),
           formaPago: formaPago,
           usuario: usuarioNombre || (item.usuario ? item.usuario.nombre_usuario : ''),
           rawItem: item
@@ -569,12 +592,15 @@ async function fetchItems(page = 1, limit = 20) {
           const rawFecha = item.fecha_hora ? item.fecha_hora.substring(0,10) : (item.createdAt ? item.createdAt.substring(0,10) : '');
           const rawHoraStr = item.fecha_hora ? item.fecha_hora.substring(11,19) : (item.createdAt ? item.createdAt.substring(11,19) : '');
           const hora12 = formatTime12(rawHoraStr);
+          const cambio = parseFloat(item.cambioUSD_al_vender);
+          const totalUSD = (cambio && cambio !== 0) ? ((parseFloat(item.precio_cobrado) || 0) / cambio) : 0;
           return {
             fecha: rawFecha,
             hora: hora12,
             productoNombre: item.producto ? item.producto.nombre : (item.servicio ? item.servicio.nombre : ''),
             cantidad: item.cantidad,
             precio_cobrado: (parseFloat(item.precio_cobrado) || 0).toFixed(2),
+            totalUSD: totalUSD.toFixed(2),
             total: (Number(item.cantidad || 0) * (parseFloat(item.precio_cobrado) || 0)).toFixed(2),
             forma_pago: item.forma_pago || '',
             usuario: item.usuario ? item.usuario.nombre_usuario : '',

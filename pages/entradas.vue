@@ -59,13 +59,13 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div class="w-full">
             <label class="block text-sm font-medium text-gray-700 mb-1">Costo mínimo</label>
-            <input type="number" v-model.number="costo_min" step="0.01" placeholder="Costo min..."
+            <input type="number" v-model.number="costo_min" step="any" placeholder="Costo min..."
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch">
           </div>
           <div class="w-full">
             <label class="block text-sm font-medium text-gray-700 mb-1">Costo máximo</label>
-            <input type="number" v-model.number="costo_max" step="0.01" placeholder="Costo max..."
+            <input type="number" v-model.number="costo_max" step="any" placeholder="Costo max..."
               class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
               @keyup.enter="handleSearch">
           </div>
@@ -119,7 +119,7 @@
           Nueva Entrada
         </button>
       </div>
-      <DataTable :columns="entradasColumns" :items="itemsData" :actions="isInvitado ? [] : entradasActions" :total-items="totalItems"
+      <DataTable :columns="visibleEntradasColumns" :items="itemsData" :actions="isInvitado ? [] : entradasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
     </div>
@@ -177,13 +177,25 @@ const entradasColumns = [
   { key: 'producto.unidadMedida', label: 'Unidad' },
   { key: 'cantidadEntrada', label: 'Cantidad' },
   {
-    key: 'producto.precio',
-    label: 'Precio Unitario',
-    cellRenderer: (value) => {
-      if (value == null || value === '') return '';
-      const num = parseFloat(value);
-      if (isNaN(num)) return value;
+    key: 'costo',
+    label: 'Costo Unitario',
+    cellRenderer: (value, item) => {
+      const val = (item.costo != null) ? item.costo : (item.producto?.costo != null ? item.producto.costo : null);
+      if (val == null || val === '') return '';
+      const num = parseFloat(val);
+      if (isNaN(num)) return val;
       return `<span class="px-2 py-1 rounded text-sm">${num.toFixed(2)}</span>`;
+    }
+  },
+  {
+    key: 'costo_usd',
+    label: 'Costo USD',
+    cellRenderer: (value, item) => {
+      const val = (item.costo_usd != null) ? item.costo_usd : (item.producto?.costo_usd != null ? item.producto.costo_usd : null);
+      if (val == null || val === '') return '';
+      const num = parseFloat(val);
+      if (isNaN(num)) return val;
+      return `<span class="px-2 py-1 rounded text-sm">${num.toFixed(5)}</span>`;
     }
   },
   {
@@ -191,9 +203,20 @@ const entradasColumns = [
     label: 'Total',
     cellRenderer: (value, item) => {
       const cantidad = parseFloat(item.cantidadEntrada || 0);
-      const precio = parseFloat(item.producto?.precio || 0);
-      const total = cantidad * precio;
+      const costo = parseFloat(item.costo != null ? item.costo : (item.producto?.costo || 0));
+      const total = cantidad * costo;
       return `<span class="px-2 py-1 rounded text-sm font-semibold">${total.toFixed(2)}</span>`;
+    }
+  },
+  {
+    key: 'total_usd',
+    label: 'Total USD',
+    cellRenderer: (value, item) => {
+      const cantidad = parseFloat(item.cantidadEntrada || 0);
+      const cu = parseFloat(item.costo_usd != null ? item.costo_usd : (item.producto?.costo_usd || 0));
+      const total = cantidad * cu;
+      if (isNaN(total)) return '';
+      return `<span class="px-2 py-1 rounded text-sm font-semibold">${total.toFixed(5)}</span>`;
     }
   },
   {
@@ -206,6 +229,11 @@ const entradasColumns = [
     }
   }
 ];
+
+// Computed columnas visibles (mostrar todas, incluidas columnas USD)
+const visibleEntradasColumns = computed(() => {
+  return entradasColumns;
+});
 
 // Paginación y datos
 const currentPage = ref(1);
@@ -604,19 +632,26 @@ async function exportToExcel() {
 
     const data = await response.json();
 
-    // Mapear los datos a las columnas requeridas en el orden especificado
-    const exportData = data.data.map(item => ({
-      'Producto': item.producto?.nombre || '',
-      'Código': item.producto?.codigo || '',
-      'Unidad': item.producto?.unidadMedida || '',
-      'Cantidad': item.cantidadEntrada,
-      'Precio Unitario': Number(item.producto?.precio || 0).toFixed(2),
-      'Total': (Number(item.cantidadEntrada) * Number(item.producto?.precio || 0)).toFixed(2),
-      'Fecha': item.fecha ? item.fecha.substring(0, 10) : '',
-      'Nota': item.nota || '',
-      'Contrato': item.contrato?.num_consecutivo || '',
-      'Entidad': item.contrato?.entidad?.nombre || ''
-    }));
+    // Mapear los datos a las columnas requeridas en el orden especificado (usar costo y costo_usd)
+    const exportData = data.data.map(item => {
+      const costoUnit = Number(item.costo != null ? item.costo : (item.producto?.costo || 0));
+      const costoUsdUnit = Number(item.costo_usd != null ? item.costo_usd : (item.producto?.costo_usd || 0));
+      const cantidadNum = Number(item.cantidadEntrada || 0);
+      return {
+        'Producto': item.producto?.nombre || '',
+        'Código': item.producto?.codigo || '',
+        'Unidad': item.producto?.unidadMedida || '',
+        'Cantidad': item.cantidadEntrada,
+        'Costo Unitario': costoUnit.toFixed(2),
+        'Costo USD': costoUsdUnit.toFixed(5),
+        'Total': (cantidadNum * costoUnit).toFixed(2),
+        'Total USD': (cantidadNum * costoUsdUnit).toFixed(5),
+        'Fecha': item.fecha ? item.fecha.substring(0, 10) : '',
+        'Nota': item.nota || '',
+        'Contrato': item.contrato?.num_consecutivo || '',
+        'Entidad': item.contrato?.entidad?.nombre || ''
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();

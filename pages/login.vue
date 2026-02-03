@@ -102,6 +102,24 @@ const handleLogin = async () => {
     if (data.token && data.usuario) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      // After successful login, fetch /config and store it in localStorage
+      try {
+        const cfgRes = await fetch(`${config.public.backendHost}/config`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': data.token || ''
+          }
+        });
+        if (cfgRes.ok) {
+          const cfgData = await cfgRes.json();
+          localStorage.setItem('config', JSON.stringify(cfgData));
+        } else {
+          console.warn('No se pudo obtener /config:', cfgRes.status);
+        }
+      } catch (e) {
+        console.warn('Error al obtener /config:', e);
+      }
       navigateTo('/');
     } else {
       errorMsg.value = 'Respuesta inesperada del servidor.';

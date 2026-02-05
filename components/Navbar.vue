@@ -163,6 +163,7 @@ const options = [
     //{ label: "Ofertas", src: "/Ofertas.png", link: "/ofertas", roles: ALL_ROLES },
     { label: "Tipos de Contratos", src: "/firmar.png", link: "/tipos-contratos", roles: ["Administrador", "Comercial"] },
     { label: "Usuario", src: "/usuarios.png", link: "/usuarios", roles: ["Administrador"] },
+    { label: "Informes", src: "/bar-chart.png", link: "/informes", roles: ["Administrador", "Comercial", "Invitado"] },
     { label: "Configuración", src: "/analitica.png", link: "/config", roles: ["Administrador"] }
 ];
 

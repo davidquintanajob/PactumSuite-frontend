@@ -1,297 +1,473 @@
 <template>
-  <div v-if="modelValue" class="fixed inset-0 z-[12000] flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-lg w-[95%] max-w-3xl max-h-[90vh] overflow-y-auto p-6 relative">
-      <button @click="close" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
+	<div v-if="modelValue" class="fixed inset-0 z-[12000] flex items-center justify-center">
+		<div class="absolute inset-0 bg-black/50" @click="close"></div>
+		<div class="bg-white rounded-md shadow-lg max-w-[90%] w-[400px] mx-auto z-10 p-4">
+			<div class="flex justify-between items-center mb-3">
+				<h3 class="text-lg font-semibold">Comprobante</h3>
+				<button class="text-sm text-gray-600" @click="close">Cerrar ✕</button>
+			</div>
 
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-xl font-bold">Comprobante de Venta</h3>
-        <div class="flex items-center gap-2">
-          <select v-model="selectedSize" class="px-2 py-1 border rounded">
-            <option v-for="s in sizes" :key="s.value" :value="s.value">{{ s.label }}</option>
-          </select>
-          <button @click="printPreview" class="px-3 py-1 bg-primary text-white rounded flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18h12v-5H6v5z"/></svg>
-            Imprimir
-          </button>
-          <button @click="downloadPDF" class="px-3 py-1 bg-green-600 text-white rounded flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l-4-4m4 4l4-4M6 21h12"/></svg>
-            Descargar
-          </button>
-          <button @click="sharePDF" class="px-3 py-1 bg-blue-600 text-white rounded flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 8a3 3 0 10-2.83-4H9m6 8v6m0 0l3-3m-3 3l-3-3"/></svg>
-            Compartir
-          </button>
-        </div>
-      </div>
+			<div class="overflow-auto max-h-[60vh] p-2">
+				<div ref="receiptEl" class="receipt-preview mx-auto">
+					<!-- Encabezado del comprobante -->
+					<div class="receipt-header text-center mb-3">
+						<!-- Nombre del local - Más grande -->
+						<div class="text-xl font-bold mb-1">ALMACEN 5TA KILO 12</div>
+						<!-- Comprobante de Venta - Reducido -->
+						<div class="text-base font-semibold text-gray-700">Comprobante de Venta</div>
+						<!-- Fecha -->
+						<div class="text-sm text-gray-600 mt-1">{{ formattedDate }}</div>
+						<!-- Dirección -->
+						<div class="text-xs text-gray-500 mt-1">Dirección: Calle 5ta, #24</div>
+						<!-- Dependiente -->
+						<div class="text-xs font-semibold mt-1 uppercase">Dependiente: {{ dependienteNombre }}</div>
+						<!-- Folio -->
+						<div v-if="data?.codigo || data?.folio" class="text-xs font-semibold mt-1">
+							Folio: {{ data.codigo || data.folio || 'N/A' }}
+						</div>
+					</div>
 
-      <div ref="printSection" :style="pageStyle" class="p-4 border rounded bg-white">
-        <div :style="innerStyle">
-          <div class="text-center mb-4">
-            <div class="text-lg font-bold">Comprobante de pago</div>
-          </div>
+					<!-- Tabla de productos -->
+					<div class="receipt-body">
+						<table class="w-full text-sm border-collapse">
+							<thead>
+								<tr class="border-b border-gray-300 border-dashed">
+									<th class="text-left py-2 px-0 font-semibold w-[45%]">Producto</th>
+									<th class="text-center py-2 px-0 font-semibold w-[20%]">Cant.</th>
+									<th class="text-right py-2 px-0 font-semibold w-[35%]">Total</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(it, idx) in processedItems" :key="idx" 
+									class="border-b border-gray-100 border-dashed">
+									<td class="py-2 px-0">
+										<div>{{ it.nombre }}</div>
+									</td>
+									<td class="py-2 px-0 text-center">
+										{{ formatQty(it.cantidad) }}
+									</td>
+									<td class="py-2 px-0 text-right">
+										{{ formatMoney(it.cantidad * it.precio) }}
+									</td>
+								</tr>
+							</tbody>
+							<tfoot>
+								<tr class="border-t border-gray-300 border-dashed">
+									<td class="py-3 px-0 text-left font-bold">TOTAL</td>
+									<td class="py-3 px-0 text-center font-bold">{{ formatQty(totalQuantity) }}</td>
+									<td class="py-3 px-0 text-right font-bold">{{ formatMoney(total) }}</td>
+								</tr>
+							</tfoot>
+						</table>
 
-          <div class="mb-4">
-            <div><strong>Fecha creación:</strong> {{ formatDate(data?.createdAt) }}</div>
-          </div>
+						<!-- Información adicional -->
+						<div v-if="data?.cliente || data?.metodo_pago" class="mt-4 pt-3 border-t border-gray-300 border-dashed text-xs">
+							<div v-if="data.cliente" class="mb-1">
+								<span class="font-semibold">Cliente:</span> {{ data.cliente }}
+							</div>
+							<div v-if="data.metodo_pago" class="mb-1">
+								<span class="font-semibold">Método de pago:</span> {{ data.metodo_pago }}
+							</div>
+						</div>
 
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="border-b">
-                <th class="text-left py-2">Producto</th>
-                <th class="text-right py-2">Cantidad</th>
-                <th class="text-right py-2">Precio</th>
-                <th class="text-right py-2">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="venta in flatVentas" :key="venta.id_venta" class="border-b">
-                <td class="py-2">{{ venta.producto?.nombre || venta.servicio?.nombre || '---' }}</td>
-                <td class="py-2 text-right">{{ venta.cantidad }}</td>
-                <td class="py-2 text-right">{{ formatMoney(venta.precio_cobrado) }}</td>
-                <td class="py-2 text-right">{{ formatMoney((Number(venta.precio_cobrado)||0) * (Number(venta.cantidad)||0)) }}</td>
-              </tr>
-            </tbody>
-          </table>
+						<!-- Mensaje de agradecimiento -->
+						<div class="mt-4 pt-3 border-t border-gray-300 border-dashed text-center text-xs">
+							<div class="font-semibold mb-1">¡Gracias por su compra!</div>
+							<div class="text-gray-500">Vuelva pronto</div>
+						</div>
+					</div>
+				</div>
+			</div>
 
-          <div class="mt-4 text-right">
-            <div><strong>Total:</strong> {{ formatMoney(totalCalculated) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+			<div class="mt-4 flex gap-2 justify-end">
+				<button @click="printReceipt" class="px-3 py-1 bg-accent text-white rounded-md text-sm">Imprimir</button>
+				<button @click="downloadPdf" class="px-3 py-1 bg-blue-600 text-white rounded-md text-sm">Descargar</button>
+				<button @click="sharePdf" class="px-3 py-1 bg-green-600 text-white rounded-md text-sm">Compartir</button>
+			</div>
+		</div>
+	</div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-const props = defineProps({ modelValue: { type: Boolean, required: true }, data: { type: Object, default: null } });
+import { ref, watch, computed, onMounted } from 'vue';
+
+const props = defineProps({
+	modelValue: { type: Boolean, default: false },
+	data: { type: [Object, Array, null], default: null }
+});
 const emit = defineEmits(['update:modelValue']);
 
-const sizes = [
-  { label: 'Térmica 80mm (80×200 mm)', value: 'Thermal80' },
-  { label: 'A4 (8.27×11.69 in)', value: 'A4' },
-  { label: 'A5 (5.83×8.27 in)', value: 'A5' },
-  { label: 'Letter (8.5×11 in)', value: 'Letter' },
-  { label: '4×6 (4×6 in)', value: '4x6' },
-  { label: '5×7 (5×7 in)', value: '5x7' },
-  { label: '8×10 (8×10 in)', value: '8x10' }
-];
-// Por defecto usamos el tamaño térmico 80mm para impresoras de tickets
-const selectedSize = ref('Thermal80');
-const printSection = ref(null);
+const receiptEl = ref(null);
+const dependienteNombre = ref('');
 
-// Physical sizes in mm (width, height)
-const SIZE_MAP = {
-  A4: [210, 297],
-  A5: [148, 210],
-  Letter: [216, 279],
-  '4x6': [101.6, 152.4],
-  '5x7': [127, 177.8],
-  '8x10': [203.2, 254]
-};
-// Añadimos mapa para la opción térmica 80mm (ancho x alto en mm)
-// reducir altura por defecto para impresoras térmicas (menos espacio en blanco)
-SIZE_MAP.Thermal80 = [80, 120];
-const SHRINK_MM = 6; // global shrink for margin buffer
-
-const scaleFactor = computed(() => {
-  const base = SIZE_MAP[selectedSize.value] || SIZE_MAP.A4;
-  const w = base[0];
-  const baseScale = Math.max(0.5, (w - SHRINK_MM) / w);
-  const finalScale = baseScale * 0.9; // make content 20% smaller than base scale
-  return Number(Math.max(0.3, finalScale).toFixed(3));
+// Obtener nombre del dependiente del localStorage
+onMounted(() => {
+	try {
+		const usuarioStr = localStorage.getItem('usuario');
+		if (usuarioStr) {
+			const usuario = JSON.parse(usuarioStr);
+			dependienteNombre.value = usuario.nombre ? usuario.nombre.toUpperCase() : '';
+		}
+	} catch (error) {
+		console.error('Error al obtener usuario del localStorage:', error);
+		dependienteNombre.value = '';
+	}
 });
 
-const innerStyle = computed(() => ({
-  transform: `scale(${scaleFactor.value})`,
-  transformOrigin: 'top left',
-  width: '100%'
-}));
+const close = () => emit('update:modelValue', false);
 
-const flatVentas = computed(() => {
-  if (!props.data) return [];
-  if (Array.isArray(props.data.ventas)) return props.data.ventas;
-  if (Array.isArray(props.data.data) && props.data.data.length && Array.isArray(props.data.data[0].ventas)) return props.data.data[0].ventas;
-  return [];
+const items = computed(() => {
+	const d = props.data;
+	if (!d) return [];
+	if (Array.isArray(d)) return d;
+	const candidates = ['items','lista','detalles','listaVenta','ventas','lista_venta','listaVentaDetalle','detalle','productos'];
+	for (const key of candidates) {
+		if (d[key] && Array.isArray(d[key])) return d[key];
+	}
+	if (d.nombre || d.nombre_producto || d.productoNombre) return [d];
+	return [];
 });
 
-const totalCalculated = computed(() => {
-  return flatVentas.value.reduce((acc, v) => acc + (Number(v.precio_cobrado)||0) * (Number(v.cantidad)||0), 0);
+// Normalizar cada item
+const processedItems = computed(() => {
+	function parseProduct(prod) {
+		if (!prod) return null;
+		if (typeof prod === 'string') {
+			try { return JSON.parse(prod); } catch (e) { return null; }
+		}
+		if (typeof prod === 'object') return prod;
+		return null;
+	}
+
+	function productNameFrom(prod) {
+		if (!prod) return null;
+		return prod.nombre || prod.name || prod.nombre_producto || prod.productoNombre || prod.descripcion || prod.codigo || null;
+	}
+
+	return items.value.map(it => {
+		const prodRaw = it.producto ?? it.producto_detalle ?? it.producto_obj ?? null;
+		const prod = parseProduct(prodRaw) || null;
+		const nombreFromTop = it.nombre || it.nombre_producto || it.productoNombre || (typeof it.producto === 'string' ? it.producto : null) || null;
+		const nombre = productNameFrom(prod) || (typeof nombreFromTop === 'string' ? nombreFromTop : null) || '-';
+
+		const cantidad = Number(it.cantidad ?? it.qty ?? it.cant ?? it.quantity ?? it.unidades ?? 0);
+
+		const precio = Number(
+			it.precio ?? it.precio_cobrado ?? it.precio_unitario ?? it.price ?? (prod && (prod.precio ?? prod.price)) ?? 0
+		);
+
+		return { original: it, nombre, cantidad, precio };
+	});
 });
 
-function formatMoney(v) { return Number(v||0).toFixed(2); }
-function formatDate(s) { if (!s) return '-'; try { return new Date(s).toLocaleString(); } catch(e) { return s; } }
-
-const pageStyle = computed(() => {
-  // return exact CSS dimensions for the printable area (width x height in mm)
-  switch (selectedSize.value) {
-    case 'Thermal80': return { width: '80mm', height: '200mm' };
-    case 'A5': return { width: '148mm', height: '210mm' };
-    case 'Letter': return { width: '216mm', height: '279mm' };
-    case '4x6': return { width: '101.6mm', height: '152.4mm' }; // 4in x 6in
-    case '5x7': return { width: '127mm', height: '177.8mm' };
-    case '8x10': return { width: '203.2mm', height: '254mm' };
-    default: return { width: '210mm', height: '297mm' }; // A4
-  }
+const total = computed(() => {
+	return processedItems.value.reduce((s, it) => {
+		return s + (Number(it.cantidad || 0) * Number(it.precio || 0));
+	}, 0);
 });
 
-function close() { emit('update:modelValue', false); }
+const totalQuantity = computed(() => {
+	return processedItems.value.reduce((s, it) => {
+		return s + Number(it.cantidad || 0);
+	}, 0);
+});
 
-function createPrintWindow() {
-  // open a new window and write a full HTML document including basic styles
-  const w = window.open('', '_blank');
-  if (!w) return null;
-  const content = printSection.value ? printSection.value.innerHTML : '';
-  // compute selected physical dimensions (mm)
-  const base = SIZE_MAP[selectedSize.value] || SIZE_MAP.A4;
-  const pageW = base[0];
-  const pageH = base[1];
-  // CSS: set @page size and remove default margins so small thermal sizes are respected
-  const css = `
-    @page { size: ${pageW}mm ${pageH}mm; margin: 0; }
-    html, body { width: ${pageW}mm; height: ${pageH}mm; margin: 0; padding: 0; }
-    /* reducir padding para que no quede tanto espacio en blanco arriba/abajo */
-    body{font-family: Helvetica,Arial,sans-serif;padding:3mm;color:#111;box-sizing:border-box}
-    table{width:100%;border-collapse:collapse;font-size:12px}
-    th,td{padding:4px;border-bottom:1px solid #eee}
-    .text-right{text-align:right}
-    /* ensure printed elements don't overflow */
-    * { box-sizing: border-box; }
-  `;
+const formattedDate = computed(() => {
+	try {
+		const d = props.data && (props.data.fecha || props.data.created_at || props.data.createdAt || props.data.date);
+		const date = d ? new Date(d) : new Date();
+		return date.toLocaleDateString('es-ES', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	} catch (e) { return '' }
+});
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Comprobante</title><style>${css}</style></head><body>${content}</body></html>`;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  // ensure print is called once content has rendered
-  const tryPrint = () => { try { w.focus(); w.print(); } catch (e) { console.warn('Print failed', e); } };
-  // attempt on load and as fallback after short timeout
-  w.onload = () => setTimeout(tryPrint, 300);
-  setTimeout(tryPrint, 800);
-  return w;
+function formatMoney(v) {
+	const n = Number(v || 0);
+	return `$${n.toFixed(2)}`;
 }
 
-function printPreview() {
-  // open printable window and trigger print there
-  const w = createPrintWindow();
-  if (!w) {
-    alert('No se pudo abrir la ventana de impresión. Revisa bloqueadores de ventanas emergentes.');
-  }
+function formatQty(v) {
+	const n = Number(v || 0);
+	return Number.isInteger(n) ? n.toString() : n.toFixed(2);
 }
 
-function downloadPDF() {
-  console.log('downloadPDF: start');
-  // Prefer a local install via dynamic `import('html2pdf.js')` to avoid CDN/script-blocking.
-  const loadHtml2pdf = () => new Promise(async (resolve, reject) => {
-    if (window.html2pdf) return resolve(window.html2pdf);
-    // Try dynamic import (works when the package is installed locally and bundled by the dev server)
-    try {
-      const mod = await import(/* webpackIgnore: true */ 'html2pdf.js');
-      // html2pdf exposes a factory function; assign to window for compatibility
-      window.html2pdf = (mod && mod.default) ? mod.default : window.html2pdf;
-      if (window.html2pdf) return resolve(window.html2pdf);
-    } catch (e) {
-      // dynamic import failed (likely not installed). We'll attempt CDN as a fallback below.
-      console.warn('dynamic import html2pdf failed:', e && e.message ? e.message : e);
-    }
-
-    // Fallback: try loading the bundled script (may be blocked by Tracking Prevention).
-    const existing = document.querySelector('script[data-html2pdf]');
-    if (existing) {
-      const onLoad = () => { existing.removeEventListener('load', onLoad); existing.removeEventListener('error', onError); resolve(window.html2pdf); };
-      const onError = () => { existing.removeEventListener('load', onLoad); existing.removeEventListener('error', onError); reject(new Error('Failed to load html2pdf from CDN')); };
-      const onErrorRef = onError;
-      existing.addEventListener('load', onLoad);
-      existing.addEventListener('error', onErrorRef);
-      return;
-    }
-
-    const s = document.createElement('script');
-    // using unpkg CDN as last resort — may be blocked by browser Tracking Prevention
-    s.src = 'https://unpkg.com/html2pdf.js@0.9.2/dist/html2pdf.bundle.min.js';
-    s.setAttribute('data-html2pdf', '1');
-    s.onload = () => resolve(window.html2pdf);
-    s.onerror = () => reject(new Error('Failed to load html2pdf from CDN'));
-    document.head.appendChild(s);
-    // safety timeout
-    setTimeout(() => reject(new Error('html2pdf load timeout')), 10000);
-  });
-
-  (async () => {
-    try {
-      console.log('downloadPDF: loading html2pdf');
-      const html2pdf = await loadHtml2pdf();
-      console.log('downloadPDF: html2pdf loaded', !!html2pdf);
-      if (!printSection.value) throw new Error('Sección a imprimir no encontrada');
-
-      // Define physical sizes (width, height) in mm for each choice
-      const sizeMap = {
-        A4: [210, 297],
-        A5: [148, 210],
-        Letter: [216, 279],
-        '4x6': [101.6, 152.4],
-        '5x7': [127, 177.8],
-        '8x10': [203.2, 254]
-      };
-
-      const shrinkMm = 6; // reduce final PDF dims by this amount to leave margin of error
-      const base = sizeMap[selectedSize.value] || sizeMap.A4;
-      // ensure we use width x height (portrait by default)
-      const targetWidth = Math.max(10, base[0] - shrinkMm);
-      const targetHeight = Math.max(10, base[1] - shrinkMm);
-
-      const opt = {
-        margin: 3, // small margin
-        filename: 'comprobante.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 3, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'mm', format: [targetWidth, targetHeight] }
-      };
-
-      await html2pdf().set(opt).from(printSection.value).save();
-      console.log('downloadPDF: saved');
-    } catch (err) {
-      console.error('downloadPDF error:', err);
-      alert('No se pudo generar el PDF automáticamente: ' + (err && err.message ? err.message : String(err)));
-      // fallback to opening print window
-      const w = createPrintWindow();
-      if (!w) {
-        // fallback: download HTML
-        const content = printSection.value ? printSection.value.innerHTML : '';
-        const blob = new Blob([`<!doctype html><html><body>${content}</body></html>`], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'comprobante.html';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      }
-    }
-  })();
+let html2pdfLoadPromise = null;
+function loadHtml2pdf() {
+	if (window.html2pdf) return Promise.resolve();
+	if (html2pdfLoadPromise) return html2pdfLoadPromise;
+	html2pdfLoadPromise = new Promise((res, rej) => {
+		const s = document.createElement('script');
+		s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js';
+		s.onload = () => res();
+		s.onerror = () => rej(new Error('No se pudo cargar html2pdf'));
+		document.head.appendChild(s);
+	});
+	return html2pdfLoadPromise;
 }
 
-async function sharePDF() {
-  try {
-    const html = `<html><body>${printSection.value ? printSection.value.innerHTML : ''}</body></html>`;
-    const blob = new Blob([html], { type: 'text/html' });
-    const file = new File([blob], 'comprobante.html', { type: 'text/html' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Comprobante' });
-      return;
-    }
-    await navigator.clipboard.writeText(html);
-    alert('Contenido copiado al portapapeles para compartir.');
-  } catch (e) {
-    console.error('Share failed', e);
-    alert('Compartir no disponible en este navegador.');
-  }
+async function generatePdfBlob() {
+	if (!receiptEl.value) throw new Error('Receipt element not found');
+	await loadHtml2pdf();
+	const opt = {
+		margin: [2, 2, 2, 2], // Margen reducido
+		filename: `comprobante_${new Date().getTime()}.pdf`,
+		image: { type: 'jpeg', quality: 0.98 },
+		html2canvas: { 
+			scale: 2, 
+			useCORS: true,
+			letterRendering: true
+		},
+		jsPDF: { 
+			unit: 'mm', 
+			format: [72, 150], // Ancho reducido (72mm en lugar de 80mm)
+			orientation: 'portrait' 
+		}
+	};
+	return new Promise((resolve, reject) => {
+		try {
+			window.html2pdf().set(opt).from(receiptEl.value).outputPdf('blob').then((blob) => resolve(blob)).catch(reject);
+		} catch (err) { reject(err); }
+	});
+}
+
+function printReceipt() {
+	if (!receiptEl.value) return;
+	const node = receiptEl.value.cloneNode(true);
+	// Create hidden iframe to avoid popup blockers
+	const iframe = document.createElement('iframe');
+	iframe.style.position = 'fixed';
+	iframe.style.right = '0';
+	iframe.style.bottom = '0';
+	iframe.style.width = '0';
+	iframe.style.height = '0';
+	iframe.style.border = '0';
+	document.body.appendChild(iframe);
+	const doc = iframe.contentWindow.document;
+	const style = `
+		<style>
+			@page { 
+				size: 72mm auto; /* Ancho reducido */
+				margin: 2mm; /* Margen reducido */
+			}
+			body { 
+				font-family: 'Arial', sans-serif; 
+				padding: 0; 
+				margin: 0; 
+				font-size: 12px;
+				line-height: 1.3;
+				width: 72mm; /* Ancho reducido */
+			}
+			.receipt-preview { 
+				width: 72mm; /* Ancho reducido */
+				max-width: 72mm;
+				padding: 6px;
+				box-sizing: border-box;
+			}
+			.receipt-header { 
+				text-align: center; 
+				margin-bottom: 8px;
+			}
+			.receipt-header div:first-child {
+				font-size: 16px;
+				font-weight: bold;
+				margin-bottom: 2px;
+			}
+			.receipt-header div:nth-child(2) {
+				font-size: 13px;
+				font-weight: normal;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-bottom: 6px;
+			}
+			th {
+				border-bottom: 1px dashed #666;
+				padding: 4px 0;
+				text-align: left;
+				font-weight: bold;
+				font-size: 11px;
+			}
+			td {
+				padding: 3px 0;
+				vertical-align: top;
+				font-size: 11px;
+			}
+			tbody tr {
+				border-bottom: 1px dashed #ddd;
+			}
+			tfoot tr {
+				border-top: 1px dashed #666;
+			}
+			tfoot td {
+				padding-top: 5px;
+				padding-bottom: 5px;
+				font-weight: bold;
+			}
+			.additional-info, .footer {
+				border-top: 1px dashed #666;
+				padding-top: 5px;
+				margin-top: 5px;
+				font-size: 10px;
+			}
+			@media print {
+				body { 
+					background: white;
+					color: black;
+				}
+			}
+		</style>`;
+	doc.open();
+	doc.write(`<html><head><title>Comprobante de Venta</title>${style}</head><body></body></html>`);
+	doc.body.appendChild(node);
+	doc.close();
+	
+	// Wait a tick for layout, then print
+	try {
+		iframe.contentWindow.focus();
+		setTimeout(() => {
+			try { 
+				iframe.contentWindow.print(); 
+			} catch (e) { 
+				console.error('Error al imprimir:', e);
+				// Fallback: abrir ventana de impresión manualmente
+				const printContent = doc.documentElement.outerHTML;
+				const printWindow = window.open('', '_blank');
+				printWindow.document.write(printContent);
+				printWindow.document.close();
+				printWindow.focus();
+				setTimeout(() => {
+					printWindow.print();
+					printWindow.close();
+				}, 250);
+			}
+			// remove iframe after a while
+			setTimeout(() => { 
+				try { document.body.removeChild(iframe); } catch (e) {} 
+			}, 1000);
+		}, 200);
+	} catch (e) {
+		console.error('Impresión fallida:', e);
+		try { document.body.removeChild(iframe); } catch (er) {}
+		alert('No se pudo iniciar la impresión. Intente descargar el PDF.');
+	}
+}
+
+async function downloadPdf() {
+	try {
+		const blob = await generatePdfBlob();
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+		a.download = `comprobante_${timestamp}.pdf`;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+	} catch (err) {
+		console.error(err);
+		alert('Error generando PDF.');
+	}
+}
+
+async function sharePdf() {
+	try {
+		const blob = await generatePdfBlob();
+		const file = new File([blob], 'comprobante.pdf', { type: 'application/pdf' });
+		if (navigator.canShare && navigator.canShare({ files: [file] })) {
+			await navigator.share({ files: [file], title: 'Comprobante', text: 'Comprobante de venta' });
+		} else {
+			const ok = confirm('Tu navegador no soporta compartir archivos. ¿Deseas descargar el PDF en su lugar?');
+			if (ok) await downloadPdf();
+		}
+	} catch (err) {
+		console.error(err);
+		alert('No se pudo compartir el PDF.');
+	}
 }
 </script>
 
 <style scoped>
-.bg-primary { background-color: #2563eb; }
+.receipt-preview { 
+	width: 72mm; /* Ancho reducido */
+	max-width: 72mm;
+	padding: 8px 4px; /* Padding reducido horizontalmente */
+	box-sizing: border-box; 
+	background: white; 
+	color: black;
+	font-family: 'Arial', sans-serif;
+	line-height: 1.3;
+}
+.receipt-header { 
+	text-align: center; 
+	margin-bottom: 10px;
+}
+.receipt-header div:first-child {
+	font-size: 18px;
+	font-weight: bold;
+	margin-bottom: 3px;
+}
+.receipt-header div:nth-child(2) {
+	font-size: 14px;
+	font-weight: normal;
+	color: #333;
+}
+.receipt-body {
+	margin-top: 8px;
+}
+.receipt-body table {
+	font-size: 12px;
+}
+.receipt-body th {
+	font-weight: bold;
+}
+.receipt-body td {
+	font-weight: normal;
+}
+.receipt-body tfoot td {
+	font-weight: bold;
+}
+
+/* Estilos específicos para impresión */
+@media print {
+	html, body { 
+		background: white !important; 
+		margin: 0 !important;
+		padding: 0 !important;
+		width: 72mm !important;
+	}
+	.receipt-preview { 
+		width: 72mm !important; 
+		max-width: 72mm !important;
+		padding: 6px 3px !important; /* Padding horizontal reducido */
+		margin: 0 !important;
+		box-shadow: none !important;
+		border: none !important;
+	}
+	.receipt-header div:first-child {
+		font-size: 16px !important;
+	}
+	.receipt-header div:nth-child(2) {
+		font-size: 13px !important;
+	}
+	table {
+		font-size: 11px !important;
+	}
+	th, td {
+		padding: 4px 0 !important; /* Padding horizontal eliminado */
+	}
+	tfoot td {
+		font-size: 12px !important;
+	}
+	@page { 
+		size: 72mm auto; /* Ancho reducido */
+		margin: 2mm !important; /* Margen reducido */
+	}
+}
 </style>

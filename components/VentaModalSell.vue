@@ -123,8 +123,8 @@
 
           <!-- Sumatorio de elementos seleccionados (producto seleccionado) -->
           <div class="mt-3">
-            <div class="text-sm font-medium text-gray-700">Total seleccionado</div>
-            <div class="text-xl font-bold">{{ totalSeleccionado.toFixed(2) }}</div>
+            <div class="text-sm font-medium text-gray-700">Total a cobrar</div>
+            <div class="text-xl font-bold">CUP {{ formatMoney(totalSeleccionado) }} - USD: {{ formatMoney(totalSeleccionado / cambioMoneda) }}</div>
           </div>
 
           <!-- Nota global y forma de pago -->
@@ -136,26 +136,19 @@
             <div class="mb-1 text-sm font-medium text-gray-700">Forma de pago</div>
             <div class="relative flex w-full max-w-xs">
               <div
-                class="absolute top-0 left-0 w-1/2 h-full bg-primary rounded-lg transition-transform duration-300"
-                :class="formaPago === 'efectivo' ? 'transform translate-x-0' : 'transform translate-x-full'"
+                class="absolute top-0 left-0 h-full bg-primary rounded-lg transition-all duration-300"
+                :style="{ width: '33.3333%', left: (formaPagoOptions.indexOf(formaPago) * 33.3333) + '%' }"
               ></div>
               <button
+                v-for="opt in formaPagoOptions"
+                :key="opt"
                 type="button"
-                @click="formaPago = 'efectivo'"
+                @click="formaPago = opt"
                 :disabled="isViewMode"
                 class="relative flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-300 z-10"
-                :class="formaPago === 'efectivo' ? 'text-neutral bg-transparent' : 'text-dark bg-secondary'"
+                :class="(formaPago === opt) ? 'text-neutral bg-transparent' : 'text-dark bg-secondary'"
               >
-                Efectivo
-              </button>
-              <button
-                type="button"
-                @click="formaPago = 'transferencia'"
-                :disabled="isViewMode"
-                class="relative flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-300 z-10"
-                :class="formaPago === 'transferencia' ? 'text-neutral bg-transparent' : 'text-dark bg-secondary'"
-              >
-                Transferencia
+                {{ opt }}
               </button>
             </div>
           </div>
@@ -182,12 +175,13 @@ const props = defineProps({
   mode: { type: String, default: 'create' }, // 'create' | 'edit' | 'view'
   initialData: { type: Object, default: null }
 });
-const emit = defineEmits(['update:modelValue', 'submit']);
+const emit = defineEmits(['update:modelValue', 'submit', 'open-comprobante']);
 
 const ventas = ref([]);
 const currentUsuarioNombre = ref('');
 const notaVenta = ref('');
-const formaPago = ref('efectivo'); // 'efectivo' | 'transferencia'
+const formaPagoOptions = ['Efectivo CUP', 'Efectivo USD', 'Transferencia'];
+const formaPago = ref(formaPagoOptions[0]);
 const isSubmitting = ref(false);
 const loadingBanner = ref(null);
 const errorBanner = ref(null);
@@ -344,7 +338,7 @@ function close() {
   emit('update:modelValue', false);
   ventas.value = [];
   notaVenta.value = '';
-  formaPago.value = 'efectivo';
+  formaPago.value = formaPagoOptions[0];
   clearBanners();
 }
 
@@ -700,12 +694,12 @@ async function submit() {
 
     const body = {
       nota: notaVenta.value || '',
-      ventas: itemsToSend.map(v => ({
+        ventas: itemsToSend.map(v => ({
         id_producto: Number(v.id_producto),
         id_usuario: id_usuario,
         cambioUSD_al_vender: cambioMoneda.value,
         cantidad: Number(v.cantidad) || 0,
-        forma_pago: formaPago.value === 'transferencia' ? 'Transferencia' : 'Efectivo',
+          forma_pago: formaPago.value,
         costo_venta: v.productoObj ? Number(v.productoObj.costo || 0) : Number(v.costo_venta || 0),
         precio_original_venta: v.productoObj ? Number(v.productoObj.precio || 0) : Number(v.precio_original_venta || 0),
         precio_cobrado: Number(v.precio_cobrado) || 0,
@@ -763,16 +757,43 @@ async function submit() {
       // Emit to parent so it refreshes and shows success
       emit('submit', { mode: 'create', items: body.ventas, nota: body.nota, formaPago: formaPago.value });
       errorBanner.value = { title: 'Éxito', description: 'Ventas creadas correctamente.', type: 'success' };
-      // NOTE: Do NOT close modal here. Wait for user's choice in ConfirmBanner.
-      // Keep ventas reset so the form is clean if user wants to create more later.
-      ventas.value = [];
-      // store created id/raw for optional printing
+      // prepare preview data for comprobante
+      let previewData = null;
       try {
         createdListaRaw.value = responseData || null;
         createdListaId.value = (responseData && (responseData.id_lista_venta || responseData.id || (responseData.data && (responseData.data.id_lista_venta || responseData.data.id)))) || null;
       } catch (e) { createdListaId.value = null; createdListaRaw.value = null; }
-      // ask user if they want to print the created venta
-      showPrintConfirm.value = true;
+
+      // Build a preview object that VentaComprobante can consume.
+      // Prefer server response if it contains ventas/lista, else fall back to the request body + local selection metadata.
+      const serverHasVentas = (responseData && (Array.isArray(responseData.ventas) || Array.isArray(responseData.data) || Array.isArray(responseData.lista) || Array.isArray(responseData.items)));
+      if (serverHasVentas) {
+        // Try to normalize server response shape
+        previewData = responseData;
+      } else {
+        // Use the body we just sent and try to augment with product names from the local `itemsToSend`.
+        const localVentas = (itemsToSend || []).map((v, idx) => {
+          const prodObj = v.productoObj || v.producto || null;
+          const producto = prodObj ? { nombre: prodObj.nombre || prodObj.name || '', codigo: prodObj.codigo || '' , precio: prodObj.precio ?? prodObj.price } : { nombre: v.initialLabel || '' };
+          return Object.assign({}, v, { producto });
+        });
+        previewData = {
+          id_lista_venta: createdListaId.value || null,
+          nota: body.nota || '',
+          fecha: new Date().toISOString(),
+          ventas: localVentas
+        };
+      }
+
+      // Clear UI state and close modal
+      ventas.value = [];
+
+      // Emit preview to parent to open VentaComprobante and close this modal
+      try {
+        emit('open-comprobante', previewData);
+      } catch (e) { console.warn('open-comprobante emit failed', e); }
+      emit('update:modelValue', false);
+
       // clear success banner after a short delay so it doesn't persist on reopen
       setTimeout(() => { errorBanner.value = null; loadingBanner.value = null; }, 2500);
 
@@ -835,18 +856,40 @@ watch(() => props.modelValue, (val) => {
             productoObj: v.producto || null
       })) : []);
       notaVenta.value = props.initialData.nota || '';
-      // derive formaPago from first venta if exists
-      formaPago.value = (ventas.value[0] && ventas.value[0].forma_pago) ? String(ventas.value[0].forma_pago).toLowerCase() : 'efectivo';
+      // derive formaPago from first venta if exists (normalize various shapes)
+      try {
+        let fpRaw = '';
+        if (ventas.value[0] && ventas.value[0].forma_pago) fpRaw = ventas.value[0].forma_pago;
+        else if (props.initialData && (props.initialData.forma_pago || props.initialData.formaPago)) fpRaw = props.initialData.forma_pago || props.initialData.formaPago;
+        let fp = '';
+        if (fpRaw && typeof fpRaw === 'object') fp = fpRaw.nombre || fpRaw.name || '';
+        else fp = String(fpRaw || '');
+        fp = fp.trim();
+        if (!fp) {
+          formaPago.value = formaPagoOptions[0];
+        } else {
+          // try exact match first
+          const found = formaPagoOptions.find(o => o.toLowerCase() === fp.toLowerCase());
+          if (found) formaPago.value = found;
+          else if (fp.toLowerCase().includes('transfer')) formaPago.value = 'Transferencia';
+          else if (fp.toLowerCase().includes('efectivo') && fp.toLowerCase().includes('usd')) formaPago.value = 'Efectivo USD';
+          else if (fp.toLowerCase().includes('efectivo') && fp.toLowerCase().includes('cup')) formaPago.value = 'Efectivo CUP';
+          else if (fp.toLowerCase().includes('efectivo')) formaPago.value = 'Efectivo CUP';
+          else formaPago.value = formaPagoOptions[0];
+        }
+      } catch (e) {
+        formaPago.value = formaPagoOptions[0];
+      }
 
     } else if (props.mode === 'create') {
       // Ensure clean state for create mode
       ventas.value = [newItem()];
       notaVenta.value = '';
-      formaPago.value = 'efectivo';
+      formaPago.value = formaPagoOptions[0];
 
     } else {
       if (!ventas.value.length) addVenta();
-      formaPago.value = 'efectivo';
+      formaPago.value = formaPagoOptions[0];
       notaVenta.value = '';
     }
   }

@@ -1,5 +1,5 @@
 <template>
-  <Modal :show="modelValue" @close="$emit('update:modelValue', false)" size="2xl">
+  <Modal :show="modelValue" @close="onRequestClose" size="2xl">
     <template #title>
       <h3 class="text-lg font-semibold text-gray-900">
         {{ isViewing ? 'Detalles de la Entrada' : (isEditing ? 'Editar Entrada' : 'Nueva Entrada') }}
@@ -7,6 +7,20 @@
     </template>
 
     <template #content>
+      <div ref="contentWrapper">
+      <div v-if="message" class="mb-4">
+        <MessageBanner :title="message.title" :description="message.description" :type="message.type" @close="message = null" />
+      </div>
+      <div v-if="confirmVisible" class="mb-4">
+        <ConfirmBanner
+          :title="`Actualizar costo del producto ${confirmInfo.id_producto}?`"
+          :description="`Costo actual: CUP ${Number(confirmInfo.currentCosto).toFixed(2)} - USD ${Number(confirmInfo.currentCostoUsd).toFixed(5)}.\nCosto sugerido: CUP ${Number(confirmInfo.suggestedCosto).toFixed(2)} - USD ${Number(confirmInfo.suggestedCostoUsd).toFixed(5)}.\nExistencia actual: ${confirmInfo.existingQty}, entrada: ${confirmInfo.entryQty}.`"
+          :icon="''"
+          type="warning"
+          @confirm="applyProductUpdate"
+          @close="closeConfirmNoUpdate"
+        />
+      </div>
       <div v-if="isViewing" class="space-y-6">
         <!-- Vista sólo lectura (igual a anterior) -->
         <div class="bg-gray-50 rounded-lg p-4">
@@ -224,34 +238,56 @@
           <div v-for="(e, idx) in errorList" :key="idx">{{ e }}</div>
         </div>
       </div>
+      </div>
     </template>
 
     <template #footer>
       <div class="flex justify-end gap-2">
         <button v-if="!isViewing" @click="onSubmit" class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90">{{ isEditing ? 'Guardar' : 'Crear' }}</button>
-        <button @click="$emit('update:modelValue', false)" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cerrar</button>
+        <button @click="onRequestClose" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cerrar</button>
       </div>
     </template>
   </Modal>
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from 'vue';
+import { ref, reactive, watch, computed, nextTick } from 'vue';
 import Modal from '@/components/Modal.vue';
 import SelectSearchAPI from '@/components/SelectSearchAPI.vue';
+import ConfirmBanner from '@/components/ConfirmBanner.vue';
+import MessageBanner from '@/components/MessageBanner.vue';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   entrada: { type: Object, default: () => ({}) },
   isViewing: { type: Boolean, default: true },
-  isEditing: { type: Boolean, default: false }
+  isEditing: { type: Boolean, default: false },
+  // Optional: function that will be called to create the entrada.
+  // Should return the created entrada object on success.
+  submitHandler: { type: Function, required: false }
 });
 
-const emit = defineEmits(['update:modelValue', 'submit']);
+const emit = defineEmits(['update:modelValue', 'submit', 'success']);
 
 const form = reactive({ id_producto: null, cantidadEntrada: null, nota: '', fecha: '', costo: null, costo_usd: null });
 const selectedProducto = ref(null);
 const errorList = ref([]);
+
+// confirm banner state
+const confirmVisible = ref(false);
+const confirmInfo = reactive({
+  id_producto: null,
+  currentCosto: 0,
+  currentCostoUsd: 0,
+  suggestedCosto: 0,
+  suggestedCostoUsd: 0,
+  existingQty: 0,
+  entryQty: 0
+});
+
+// message banner state
+const message = ref(null); // { title, description, type }
+const contentWrapper = ref(null);
 
 const cambioMoneda = ref(1);
 
@@ -323,7 +359,149 @@ async function onSubmit() {
     const cu = Number(form.costo_usd);
     if (!isNaN(cu)) payload.costo_usd = cu;
   }
+  // If a submitHandler prop is provided, call it and wait for the created entrada
+  if (props.submitHandler && typeof props.submitHandler === 'function') {
+    try {
+      const created = await props.submitHandler(payload);
+      // If creation returned an object with id_producto proceed to fetch product
+      if (created && created.id_producto) {
+        await handlePostCreate(created);
+      } else {
+        // fallback: emit success and close
+        emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
+        emit('update:modelValue', false);
+      }
+    } catch (e) {
+      errorList.value.push(e.message || 'Error al crear la entrada');
+    }
+    return;
+  }
+
+  // Default behavior: emit submit and let parent handle creation
   emit('submit', payload);
+}
+
+async function handlePostCreate(createdEntrada) {
+  // Fetch product data to compute weighted average
+  const id = createdEntrada.id_producto || form.id_producto;
+  if (!id) {
+    emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
+    emit('update:modelValue', false);
+    return;
+  }
+
+  const config = useRuntimeConfig();
+  const token = localStorage.getItem('token');
+
+  // Try common GET endpoints to retrieve product
+  const tryUrls = [
+    `${config.public.backendHost}/Producto/getProducto/${id}`,
+    `${config.public.backendHost}/Producto/${id}`,
+    `${config.public.backendHost}/Producto/Get/${id}`
+  ];
+
+  let prod = null;
+  for (const u of tryUrls) {
+    try {
+      const res = await fetch(u, { method: 'GET', headers: { Authorization: token, Accept: 'application/json' } });
+      if (res.ok) {
+        prod = await res.json();
+        break;
+      }
+    } catch (e) {
+      // continue
+    }
+  }
+
+  if (!prod) {
+    // If product couldn't be fetched, just close with success
+    emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
+    emit('update:modelValue', false);
+    return;
+  }
+
+  // Determine existing and entry costs/quantities
+  const existingQty = Number(prod.cantidadExistencia) || 0;
+  const existingCosto = Number(prod.costo) || 0;
+  const existingCostoUsd = Number(prod.costo_usd) || 0;
+
+  const entryQty = Number(createdEntrada.cantidadEntrada != null ? createdEntrada.cantidadEntrada : form.cantidadEntrada) || 0;
+  const entryCosto = Number(createdEntrada.costo != null ? createdEntrada.costo : form.costo) || 0;
+  const entryCostoUsd = Number(createdEntrada.costo_usd != null ? createdEntrada.costo_usd : form.costo_usd) || 0;
+
+  const combinedQty = existingQty + entryQty;
+  const suggestedCosto = combinedQty > 0 ? ((existingQty * existingCosto + entryQty * entryCosto) / combinedQty) : entryCosto;
+  const suggestedCostoUsd = combinedQty > 0 ? ((existingQty * existingCostoUsd + entryQty * entryCostoUsd) / combinedQty) : entryCostoUsd;
+
+  // populate confirm info and show banner
+  confirmInfo.id_producto = id;
+  confirmInfo.currentCosto = existingCosto;
+  confirmInfo.currentCostoUsd = existingCostoUsd;
+  confirmInfo.suggestedCosto = suggestedCosto;
+  confirmInfo.suggestedCostoUsd = suggestedCostoUsd;
+  confirmInfo.existingQty = existingQty;
+  confirmInfo.entryQty = entryQty;
+
+  confirmVisible.value = true;
+}
+
+// When confirm banner appears, scroll modal content to top so banner is visible
+watch(confirmVisible, async (val) => {
+  if (val) {
+    await nextTick();
+    try {
+      // The wrapper is direct child of Modal's scrollable container
+      const wrapper = contentWrapper.value;
+      const scrollContainer = wrapper && wrapper.parentElement ? wrapper.parentElement : null;
+      if (scrollContainer && typeof scrollContainer.scrollTo === 'function') {
+        scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (wrapper && typeof wrapper.scrollIntoView === 'function') {
+        wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+});
+
+function onRequestClose() {
+  // prevent closing when confirm prompt is visible
+  if (confirmVisible.value) return;
+  emit('update:modelValue', false);
+}
+
+async function applyProductUpdate() {
+  const id = confirmInfo.id_producto;
+  if (!id) return;
+  const config = useRuntimeConfig();
+  const token = localStorage.getItem('token');
+  const body = {
+    costo: Number(confirmInfo.suggestedCosto).toFixed(2),
+    costo_usd: Number(confirmInfo.suggestedCostoUsd).toFixed(5)
+  };
+  try {
+    const url = `${config.public.backendHost}/Producto/updateProducto/${id}`;
+    const res = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: token, Accept: 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) {
+      // ignore update failure but notify user
+      message.value = { title: 'Actualización fallida', description: 'No se pudo actualizar el costo del producto.', type: 'warning' };
+    } else {
+      message.value = { title: 'Producto actualizado', description: 'Se actualizó el costo del producto con el nuevo costo promedio.', type: 'success' };
+    }
+  } catch (e) {
+    message.value = { title: 'Error', description: e.message || 'Error al actualizar producto', type: 'error' };
+  } finally {
+    confirmVisible.value = false;
+    // cierre modal mostrando éxito de la entrada
+    emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
+    emit('update:modelValue', false);
+  }
+}
+
+function closeConfirmNoUpdate() {
+  confirmVisible.value = false;
+  emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
+  emit('update:modelValue', false);
 }
 
 // load cambio_moneda when modal opens

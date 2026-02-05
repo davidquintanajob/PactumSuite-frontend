@@ -102,23 +102,74 @@ const handleLogin = async () => {
     if (data.token && data.usuario) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      // After successful login, fetch /config and store it in localStorage
+      // After successful login, try to fetch exchange rate and store it as { cambio_moneda: rate }
+      // If exchange-rate fails, fall back to fetching /config as before
       try {
-        const cfgRes = await fetch(`${config.public.backendHost}/config`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': data.token || ''
+        const exchRes = await fetch(`${config.public.backendHost}/exchange-rate`);
+        if (exchRes.ok) {
+          const exchData = await exchRes.json().catch(() => null);
+          if (exchData && exchData.rate != null) {
+            const cfgObj = { cambio_moneda: Number(exchData.rate) };
+            localStorage.setItem('config', JSON.stringify(cfgObj));
+          } else {
+            // fallback to /config
+            try {
+              const cfgRes = await fetch(`${config.public.backendHost}/config`, {
+                method: 'GET',
+                headers: {
+                  'Accept': 'application/json',
+                  'Authorization': data.token || ''
+                }
+              });
+              if (cfgRes.ok) {
+                const cfgData = await cfgRes.json();
+                localStorage.setItem('config', JSON.stringify(cfgData));
+              } else {
+                console.warn('No se pudo obtener /config:', cfgRes.status);
+              }
+            } catch (e) {
+              console.warn('Error al obtener /config:', e);
+            }
           }
-        });
-        if (cfgRes.ok) {
-          const cfgData = await cfgRes.json();
-          localStorage.setItem('config', JSON.stringify(cfgData));
         } else {
-          console.warn('No se pudo obtener /config:', cfgRes.status);
+          // exch endpoint didn't return ok -> fallback
+          try {
+            const cfgRes = await fetch(`${config.public.backendHost}/config`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': data.token || ''
+              }
+            });
+            if (cfgRes.ok) {
+              const cfgData = await cfgRes.json();
+              localStorage.setItem('config', JSON.stringify(cfgData));
+            } else {
+              console.warn('No se pudo obtener /config:', cfgRes.status);
+            }
+          } catch (e) {
+            console.warn('Error al obtener /config:', e);
+          }
         }
       } catch (e) {
-        console.warn('Error al obtener /config:', e);
+        // network or other error -> fallback to /config
+        try {
+          const cfgRes = await fetch(`${config.public.backendHost}/config`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': data.token || ''
+            }
+          });
+          if (cfgRes.ok) {
+            const cfgData = await cfgRes.json();
+            localStorage.setItem('config', JSON.stringify(cfgData));
+          } else {
+            console.warn('No se pudo obtener /config:', cfgRes.status);
+          }
+        } catch (err) {
+          console.warn('Error al obtener /config:', err);
+        }
       }
       navigateTo('/');
     } else {

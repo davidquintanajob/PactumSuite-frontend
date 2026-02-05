@@ -31,6 +31,7 @@
             </div>
           </div>
         </div>
+        
 
         <!-- Modo de visualización: Normal / Detallado (estilo toggle como FacturaModal) -->
         <div class="mb-4">
@@ -139,6 +140,26 @@
       <!-- Resumen con sumatorios devueltos por la API -->
       <div v-if="viewMode === 'normal'" class="mt-6 bg-white rounded-lg shadow-md p-4 w-[95%] mx-auto">
         <h3 class="text-xl font-semibold mb-4">Resumen de Totales</h3>
+        <!-- Resumen en USD (derivado en cliente) -->
+        <div class="mb-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div class="bg-gray-50 text-gray-800 rounded p-3">
+            <div class="text-sm font-medium">Suma Cantidad (USD)</div>
+            <div class="text-lg font-bold">{{ (paginationData.sumCantidad ?? 0) }}</div>
+          </div>
+          <div class="bg-green-50 text-green-800 rounded p-3">
+            <div class="text-sm font-medium">Precio Cobrado * Cantidad (USD)</div>
+            <div class="text-lg font-bold">{{ (((paginationData.sumPrecioCobradoUSD ?? 0)) || 0).toFixed(5) }}</div>
+          </div>
+          <div v-if="!isVendedor" class="bg-blue-50 text-blue-800 rounded p-3">
+            <div class="text-sm font-medium">CostoVenta * Cantidad (USD)</div>
+            <div class="text-lg font-bold">{{ (((paginationData.sumCostoVentaUSD ?? 0)) || 0).toFixed(5) }}</div>
+          </div>
+          <div v-if="!isVendedor" class="bg-yellow-50 text-yellow-800 rounded p-3">
+            <div class="text-sm font-medium">Ganancia Total (USD)</div>
+            <div class="text-lg font-bold">{{ ((((paginationData.sumPrecioCobradoUSD ?? 0)) - ((paginationData.sumCostoVentaUSD ?? 0))) || 0).toFixed(5) }}</div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div class="bg-gray-100 text-gray-800 rounded p-3">
             <div class="text-sm font-medium">Suma Cantidad</div>
@@ -167,7 +188,7 @@
         <div>Cargando lista de venta...</div>
       </div>
     </div>
-    <VentaModalSell v-model="showSellModal" :mode="modalMode" :initialData="modalInitialData" @submit="handleNewVentas" />
+    <VentaModalSell v-model="showSellModal" :mode="modalMode" :initialData="modalInitialData" @submit="handleNewVentas" @open-comprobante="openComprobanteFromModal" />
     <VentaComprobante v-model="showComprobante" :data="comprobanteData" />
   </div>
 </template>
@@ -248,18 +269,16 @@ const ventasColumns = computed(() => {
         label: 'Forma de Pago',
         cellRenderer: (value) => {
           if (!value) return '';
-          let bg = '';
-          // Normalizar
           const v = String(value).toLowerCase();
-          if (v === 'efectivo') {
-            bg = 'bg-green-100 text-green-800';
-          } else if (v === 'transferencia') {
-            bg = 'bg-blue-100 text-blue-800';
-          } else if (v.includes('efectivo') && v.includes('transferencia')) {
+          // composite: both efectivo and transferencia
+          const hasEfectivo = v.includes('efectivo');
+          const hasTransfer = v.includes('transferencia');
+          if (hasEfectivo && hasTransfer) {
             return `<span class="px-2 py-1 rounded-full text-sm font-medium"><span class=\"inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded-l\">Efectivo</span><span class=\"inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded-r\">Transferencia</span></span>`;
-          } else {
-            bg = 'bg-gray-100 text-gray-800';
           }
+          let bg = 'bg-gray-100 text-gray-800';
+          if (hasTransfer) bg = 'bg-blue-100 text-blue-800';
+          else if (hasEfectivo) bg = 'bg-green-100 text-green-800';
           return `<span class="px-2 py-1 rounded-full text-sm font-medium ${bg}">${value}</span>`;
         }
       },
@@ -282,17 +301,15 @@ const ventasColumns = computed(() => {
       label: 'Forma de Pago',
       cellRenderer: (value) => {
         if (!value) return '';
-        let bg = '';
         const v = String(value).toLowerCase();
-        if (v === 'efectivo') {
-          bg = 'bg-green-100 text-green-800';
-        } else if (v === 'transferencia') {
-          bg = 'bg-blue-100 text-blue-800';
-        } else if (v.includes('efectivo') && v.includes('transferencia')) {
+        const hasEfectivo = v.includes('efectivo');
+        const hasTransfer = v.includes('transferencia');
+        if (hasEfectivo && hasTransfer) {
           return `<span class="px-2 py-1 rounded-full text-sm font-medium"><span class=\"inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded-l\">Efectivo</span><span class=\"inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded-r\">Transferencia</span></span>`;
-        } else {
-          bg = 'bg-gray-100 text-gray-800';
         }
+        let bg = 'bg-gray-100 text-gray-800';
+        if (hasTransfer) bg = 'bg-blue-100 text-blue-800';
+        else if (hasEfectivo) bg = 'bg-green-100 text-green-800';
         return `<span class="px-2 py-1 rounded-full text-sm font-medium ${bg}">${value}</span>`;
       }
     },
@@ -559,13 +576,18 @@ async function fetchItems(page = 1, limit = 20) {
 
         let formaPago = '';
         const formasArr = Array.from(formas);
-        if (formasArr.length === 0) formaPago = '';
-        else if (formasArr.length === 1) formaPago = formasArr[0] === 'transferencia' ? 'Transferencia' : (formasArr[0] === 'efectivo' ? 'Efectivo' : formasArr[0]);
-        else {
-          const hasEfectivo = formasArr.includes('efectivo');
-          const hasTransfer = formasArr.includes('transferencia');
+        if (formasArr.length === 0) {
+          formaPago = '';
+        } else if (formasArr.length === 1) {
+          // Capitalize each word of the single forma
+          formaPago = formasArr[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        } else {
+          const hasEfectivo = formasArr.some(s => s.includes('efectivo'));
+          const hasTransfer = formasArr.some(s => s.includes('transferencia'));
           if (hasEfectivo && hasTransfer) formaPago = 'Efectivo y Transferencia';
-          else formaPago = formasArr.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' y ');
+          else {
+            formaPago = formasArr.map(s => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(' y ');
+          }
         }
 
         const rawHora = mostCommon(timeCount) || (item.createdAt ? item.createdAt.substring(11,19) : '');
@@ -586,6 +608,34 @@ async function fetchItems(page = 1, limit = 20) {
       itemsData.value = mapped;
       totalItems.value = data.pagination ? data.pagination.total : (mapped.length);
       paginationData.value = data.pagination || {};
+
+      // Calcular totales en USD dividendo por el cambioUSD_al_vender de cada venta
+      try {
+        let sumPrecioCobradoUSD = 0;
+        let sumCostoVentaUSD = 0;
+        let sumGananciaTotalUSD = 0;
+        (data.data || []).forEach(listItem => {
+          const ventasArr = Array.isArray(listItem.ventas) ? listItem.ventas : [];
+          ventasArr.forEach(v => {
+            const precio = parseFloat(v.precio_cobrado) || 0;
+            const cantidad = Number(v.cantidad) || 0;
+            const cambio = parseFloat(v.cambioUSD_al_vender) || 0;
+            const costo = (parseFloat(v.costo_venta) || parseFloat(v.costoVenta) || 0);
+            if (cambio && cambio !== 0) {
+              sumPrecioCobradoUSD += (precio * cantidad) / cambio;
+              sumCostoVentaUSD += (costo * cantidad) / cambio;
+              sumGananciaTotalUSD += ((precio - costo) * cantidad) / cambio;
+            }
+          });
+        });
+        // añadir valores derivados a paginationData para mostrarlos en la UI
+        paginationData.value.sumPrecioCobradoUSD = sumPrecioCobradoUSD;
+        paginationData.value.sumCostoVentaUSD = sumCostoVentaUSD;
+        paginationData.value.sumGananciaTotalUSD = sumGananciaTotalUSD;
+      } catch (e) {
+        // Silencioso: si algo falla dejamos los valores por defecto del backend
+        console.error('Error calculando totales USD:', e);
+      }
     } else {
       // modo detallado: cada elemento es una venta individual
         const mapped = (data.data || []).map(item => {
@@ -716,6 +766,11 @@ const handleNewVentas = async (ventasPayload) => {
   modalInitialData.value = null;
   showSellModal.value = false;
 };
+
+function openComprobanteFromModal(data) {
+  comprobanteData.value = data || null;
+  showComprobante.value = true;
+}
 
 // printing is handled directly by VentaModalSell now
 

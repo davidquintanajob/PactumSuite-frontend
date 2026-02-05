@@ -129,7 +129,8 @@
       :entrada="selectedEntrada"
       :is-editing="isEditing"
       :is-viewing="isViewing"
-      @submit="handleEntradaSubmit"
+      :submitHandler="createEntrada"
+      @success="onEntradaSuccess"
     />
   </div>
 </template>
@@ -525,6 +526,62 @@ async function handleEntradaSubmit(payload) {
     await fetchEntradas(currentPage.value);
   } catch (e) {
     errorBanner.value = { title: 'Error', description: 'Ocurrió un error al guardar', type: 'error' };
+  }
+}
+
+// Nueva implementación para que el modal pueda crear/actualizar la entrada
+async function createEntrada(payload) {
+  try {
+    const token = localStorage.getItem('token');
+    const url = isEditing.value && selectedEntrada.value?.id_entrada
+      ? `${config.public.backendHost}/Entrada/updateEntrada/${selectedEntrada.value.id_entrada}`
+      : `${config.public.backendHost}/Entrada/createEntrada`;
+    const method = isEditing.value ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': token, 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.status === 401) {
+      errorBanner.value = { title: 'Sesión Expirada', description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.', type: 'warning' };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => { navigateTo('/'); }, 3000);
+      throw new Error('Sesión Expirada');
+    }
+    if (res.status === 403) {
+      errorBanner.value = { title: 'Acceso Denegado', description: 'No tienes permisos para realizar esta acción o acceder a esta información.', type: 'error' };
+      throw new Error('Acceso Denegado');
+    }
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = Array.isArray(err.errors) ? err.errors.join('\n') : (err.error || 'Error en la operación');
+      errorBanner.value = { title: 'Error', description: msg, type: 'error' };
+      throw new Error(msg);
+    }
+
+    const data = await res.json().catch(() => null);
+    const created = data && (data.data || data) ? (data.data || data) : null;
+    return created;
+  } catch (e) {
+    throw e;
+  }
+}
+
+// Maneja el evento `success` emitido por el modal: mostrar banner y recargar lista
+async function onEntradaSuccess(payload) {
+  try {
+    errorBanner.value = { title: payload?.title || 'Entrada creada', description: payload?.description || '', type: 'success' };
+    // reset modal state
+    showModal.value = false;
+    selectedEntrada.value = {};
+    isEditing.value = false;
+    isViewing.value = false;
+    await fetchEntradas(currentPage.value);
+  } catch (e) {
+    console.error(e);
   }
 }
 

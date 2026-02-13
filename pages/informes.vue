@@ -60,7 +60,7 @@
                       <span class="w-4 h-4 rounded-sm bg-blue-500 inline-block"></span>
                       <span class="font-medium">Inventario (valor)</span>
                     </div>
-                    <div class="text-xs text-gray-500">Sumatoria de (<em>precio-usd * cantidad-en-existencia</em>) de todos los productos en el sistema.</div>
+                    <div class="text-xs text-gray-500">Sumatoria de (<em>costo-usd * cantidad-en-existencia</em>) de todos los productos en el sistema.</div>
                   </div>
                   <div class="font-semibold text-right">{{ inventarioTotal.toFixed(2) }} <span class="text-sm text-gray-500">({{ percentages[1].toFixed(1) }}%)</span></div>
                 </div>
@@ -324,9 +324,9 @@ async function generateInformeA() {
     const productos = await fetchJson(`${config.public.backendHost}/producto`, token).catch(err => { console.error(err); return []; });
     let inventario = 0;
     for (const p of productos || []) {
-      const precio_usd = safeNum(p.precio_usd);
+      const costo_usd = safeNum(p.costo_usd);
       const cantidadExist = safeNum(p.cantidadExistencia);
-      inventario += precio_usd * cantidadExist;
+      inventario += costo_usd * cantidadExist;
     }
     inventarioTotal.value = inventario;
 

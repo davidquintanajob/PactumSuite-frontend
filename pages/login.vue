@@ -1,6 +1,24 @@
 <template>
   <div class="flex min-h-screen flex-1 flex-col justify-center px-6 py-12 bg-gradient-to-br via-secondary/40 from-accent/30 to-neutral">
     <SeoMeta title="Iniciar Sesión - Contract Manager" description="Accede a Contract Manager para gestionar contratos y entidades." canonical="/login" />
+    
+    <!-- Pantalla de carga -->
+    <div v-if="isLoading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-white rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-gray-700 font-medium">Iniciando sesión...</p>
+      </div>
+    </div>
+
+    <!-- Banner de error -->
+    <MessageBanner 
+      v-if="showError" 
+      title="Error al iniciar sesión" 
+      :description="errorMsg" 
+      type="error" 
+      @close="showError = false"
+    />
+
     <div class="sm:mx-auto sm:w-full sm:max-w-sm">
       <img class="mx-auto h-24 w-24 rounded-full shadow mt-8" src="/logo.png" alt="Logo" />
       <h2 class="mt-8 text-center text-2xl font-bold tracking-tight text-gray-900">Inicia sesión en tu cuenta</h2>
@@ -18,7 +36,8 @@
               autocomplete="username"
               required
               v-model="username"
-              class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm"
+              :disabled="isLoading"
+              class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Usuario"
             />
           </div>
@@ -36,18 +55,18 @@
               autocomplete="current-password"
               required
               v-model="password"
-              class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm"
+              :disabled="isLoading"
+              class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Contraseña"
             />
           </div>
         </div>
 
-        <div v-if="errorMsg" class="text-red-600 text-sm text-center">{{ errorMsg }}</div>
-
         <div>
           <button
             type="submit"
-            class="flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-neutral shadow hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            :disabled="isLoading"
+            class="flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-neutral shadow hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Ingresar
           </button>
@@ -66,20 +85,29 @@
 
 <script setup>
 import SeoMeta from '@/components/SeoMeta.vue';
+import MessageBanner from '@/components/MessageBanner.vue';
 import { ref } from 'vue';
 import { useRuntimeConfig, navigateTo } from 'nuxt/app';
 
 const username = ref('');
 const password = ref('');
 const errorMsg = ref('');
+const showError = ref(false);
+const isLoading = ref(false);
 const config = useRuntimeConfig();
 
 const handleLogin = async () => {
   errorMsg.value = '';
+  showError.value = false;
+  
   if (!username.value || !password.value) {
     errorMsg.value = 'Por favor, completa todos los campos.';
+    showError.value = true;
     return;
   }
+  
+  isLoading.value = true;
+  
   try {
     const res = await fetch(`${config.public.backendHost}/usuario/login`, {
       method: 'POST',
@@ -92,9 +120,12 @@ const handleLogin = async () => {
         contrasenna: password.value
       })
     });
+    
     if (!res.ok) {
       const data = await res.json();
       errorMsg.value = 'Usuario o contraseña incorrectos.';
+      showError.value = true;
+      isLoading.value = false;
       return;
     }
     
@@ -174,9 +205,13 @@ const handleLogin = async () => {
       navigateTo('/');
     } else {
       errorMsg.value = 'Respuesta inesperada del servidor.';
+      showError.value = true;
+      isLoading.value = false;
     }
   } catch (e) {
     errorMsg.value = 'Error de conexión con el servidor.';
+    showError.value = true;
+    isLoading.value = false;
   }
 };
 </script>

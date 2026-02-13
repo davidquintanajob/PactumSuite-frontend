@@ -70,6 +70,13 @@
 							</div>
 						</div>
 
+						<!-- Canal de WhatsApp -->
+						<div class="mt-4 pt-3 border-t border-gray-300 border-dashed text-center">
+							<div class="text-xs font-semibold mb-2">Síguenos en WhatsApp</div>
+							<img src="/whasapChanel.png" alt="Código QR WhatsApp" class="w-24 h-24 mx-auto mb-2 qr-code-print">
+							<div class="text-xs text-gray-600">Escanea para unirte a nuestro<br/>canal de WhatsApp</div>
+						</div>
+
 						<!-- Mensaje de agradecimiento -->
 						<div class="mt-4 pt-3 border-t border-gray-300 border-dashed text-center text-xs">
 							<div class="font-semibold mb-1">¡Gracias por su compra!</div>
@@ -315,6 +322,15 @@ function printReceipt() {
 				margin-top: 5px;
 				font-size: 10px;
 			}
+			img.qr-code-print {
+				max-width: 22.5mm;
+				height: auto;
+				display: block;
+				margin: 6px auto;
+			}
+			.receipt-body > div {
+				text-align: center !important;
+			}
 			@media print {
 				body { 
 					background: white;
@@ -434,6 +450,14 @@ async function sharePdf() {
 	font-weight: bold;
 }
 
+.qr-code-print {
+	display: block;
+	max-width: 22.5mm;
+	width: 100%;
+	height: auto;
+	margin: 0 auto;
+}
+
 /* Estilos específicos para impresión */
 @media print {
 	html, body { 
@@ -464,6 +488,15 @@ async function sharePdf() {
 	}
 	tfoot td {
 		font-size: 12px !important;
+	}
+	.receipt-body > div {
+		text-align: center !important;
+	}
+	.qr-code-print {
+		max-width: 21mm !important;
+		width: 100% !important;
+		height: auto !important;
+		margin: 6px auto !important;
 	}
 	@page { 
 		size: 72mm auto; /* Ancho reducido */

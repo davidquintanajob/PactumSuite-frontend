@@ -169,11 +169,11 @@
             <div class="text-sm font-medium">Precio Cobrado * Cantidad</div>
             <div class="text-lg font-bold">{{ (((paginationData.sumPrecioCobrado ?? 0)) || 0).toFixed(2) }}</div>
           </div>
-          <div class="bg-blue-100 text-blue-800 rounded p-3">
+          <div v-if="!isVendedor" class="bg-blue-100 text-blue-800 rounded p-3">
             <div class="text-sm font-medium">CostoVenta * Cantidad</div>
             <div class="text-lg font-bold">{{ (((paginationData.sumCostoVenta ?? 0)) || 0).toFixed(2) }}</div>
           </div>
-          <div class="bg-yellow-100 text-yellow-800 rounded p-3">
+          <div v-if="!isVendedor" class="bg-yellow-100 text-yellow-800 rounded p-3">
             <div class="text-sm font-medium">Ganancia Total</div>
             <div class="text-lg font-bold">{{ ((((paginationData.sumPrecioCobrado ?? 0)) - ((paginationData.sumCostoVenta ?? 0))) || 0).toFixed(2) }}</div>
           </div>

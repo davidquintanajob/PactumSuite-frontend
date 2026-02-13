@@ -204,6 +204,25 @@ let _detector = null;
 let _scanning = false;
 let _codeReader = null;
 
+// ---------- CAMBIO DE MONEDA ----------
+const cambioMoneda = ref(1);
+
+function loadCambioMoneda() {
+  try {
+    const cfg = localStorage.getItem('config');
+    if (cfg) {
+      const parsed = JSON.parse(cfg);
+      const cm = Number(parsed?.cambio_moneda);
+      cambioMoneda.value = (cm && cm > 0) ? cm : 1;
+    } else {
+      cambioMoneda.value = 1;
+    }
+  } catch (e) {
+    cambioMoneda.value = 1;
+  }
+}
+// --------------------------------------
+
 function loadZXing() {
   return new Promise((resolve, reject) => {
     if (window.ZXing) return resolve(window.ZXing);
@@ -332,7 +351,6 @@ function onImgError(e) {
     e.target.style.background = 'white';
   } catch (err) {}
 }
-const cambioMoneda = ref(1);
 
 function close() {
   emit('update:modelValue', false);
@@ -682,15 +700,9 @@ async function submit() {
     const nowTs = Date.now();
     const nowStr = getLocalISOFromTimestamp(nowTs);
     // debug: timestamp used for all ventas
-    try {
-      const cfg = localStorage.getItem('config');
-      if (cfg) {
-        const parsed = JSON.parse(cfg);
-        if (parsed && parsed.cambio_moneda) cambioMoneda.value = Number(parsed.cambio_moneda) || 1;
-      }
-    } catch (e) {
-      cambioMoneda.value = 1;
-    }
+
+    // 🔁 Cargar el cambio de moneda desde localStorage
+    loadCambioMoneda();
 
     const body = {
       nota: notaVenta.value || '',
@@ -821,6 +833,8 @@ async function submit() {
 
 onMounted(() => {
   addVenta();
+  // 🔁 Cargar el cambio de moneda al montar el componente
+  loadCambioMoneda();
   try {
     const raw = localStorage.getItem('user') || localStorage.getItem('usuario');
     if (raw) {
@@ -836,9 +850,11 @@ onUnmounted(() => {
 
 // Reset when modal opens
 // Reset or populate when modal opens
-// Reset or populate when modal opens
 watch(() => props.modelValue, (val) => {
   if (val) {
+    // 🔁 Cargar el cambio de moneda cada vez que se abre el modal
+    loadCambioMoneda();
+
     // If editing or viewing and we have initialData, populate fields
     if ((props.mode === 'edit' || props.mode === 'view') && props.initialData) {
       // populate ventas from initialData.ventas

@@ -512,10 +512,22 @@ async function handleEntradaSubmit(payload) {
       headers: { 'Content-Type': 'application/json', 'Authorization': token, 'Accept': 'application/json' },
       body: JSON.stringify(payload)
     });
+    // Intentar parsear cuerpo de respuesta (si existe) para mostrar errores detallados
+    let responseData = null;
+    try { responseData = await res.json(); } catch (e) { responseData = null; }
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = Array.isArray(err.errors) ? err.errors.join('\n') : (err.error || 'Error en la operación');
-      errorBanner.value = { title: 'Error', description: msg, type: 'error' };
+      let errorMessage = 'Error desconocido';
+      if (responseData && responseData.errors && Array.isArray(responseData.errors)) {
+        errorMessage = responseData.errors.join('\n• ');
+      } else if (responseData && typeof responseData.error === 'string') {
+        errorMessage = responseData.error;
+      } else if (responseData && (responseData.message || responseData.description)) {
+        errorMessage = responseData.message || responseData.description;
+      } else if (responseData) {
+        errorMessage = JSON.stringify(responseData);
+      }
+      errorBanner.value = { title: `Error ${res.status}`, description: errorMessage, type: 'error' };
       return;
     }
     errorBanner.value = { title: isEditing.value ? 'Entrada actualizada' : 'Entrada creada', description: 'Operación exitosa', type: 'success' };
@@ -555,11 +567,23 @@ async function createEntrada(payload) {
       throw new Error('Acceso Denegado');
     }
 
+    // Intentar parsear cuerpo de respuesta (si existe) para mostrar errores detallados
+    let responseData = null;
+    try { responseData = await res.json(); } catch (e) { responseData = null; }
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = Array.isArray(err.errors) ? err.errors.join('\n') : (err.error || 'Error en la operación');
-      errorBanner.value = { title: 'Error', description: msg, type: 'error' };
-      throw new Error(msg);
+      let errorMessage = 'Error desconocido';
+      if (responseData && responseData.errors && Array.isArray(responseData.errors)) {
+        errorMessage = responseData.errors.join('\n• ');
+      } else if (responseData && typeof responseData.error === 'string') {
+        errorMessage = responseData.error;
+      } else if (responseData && (responseData.message || responseData.description)) {
+        errorMessage = responseData.message || responseData.description;
+      } else if (responseData) {
+        errorMessage = JSON.stringify(responseData);
+      }
+      errorBanner.value = { title: `Error ${res.status}`, description: errorMessage, type: 'error' };
+      throw new Error(errorMessage);
     }
 
     const data = await res.json().catch(() => null);

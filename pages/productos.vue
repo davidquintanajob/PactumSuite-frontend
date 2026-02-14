@@ -630,22 +630,22 @@ const handleSubmit = async (producto) => {
       return;
     }
 
-    // Si la respuesta es 400 o 500, mostrar los errores de validación
-    if (response.status === 400 || response.status === 500) {
-      const errorData = await response.json();
-      if (errorData.error) {
-        errorBanner.value = {
-          title: `Errores de validación: ${response.status}`,
-          description: errorData.message,
-          type: 'error'
-        };
-      } else {
-        errorBanner.value = {
-          title: `Error: ${response.status}`,
-          description: JSON.stringify(errorData),
-          type: 'error'
-        };
+    // Intentar parsear cuerpo de respuesta (si existe) para mostrar errores detallados
+    let responseData = null;
+    try { responseData = await response.json(); } catch (e) { responseData = null; }
+
+    if (!response.ok) {
+      let errorMessage = 'Error desconocido';
+      if (responseData && responseData.errors && Array.isArray(responseData.errors)) {
+        errorMessage = responseData.errors.join('\n• ');
+      } else if (responseData && typeof responseData.error === 'string') {
+        errorMessage = responseData.error;
+      } else if (responseData && (responseData.message || responseData.description)) {
+        errorMessage = responseData.message || responseData.description;
+      } else if (responseData) {
+        errorMessage = JSON.stringify(responseData);
       }
+      errorBanner.value = { title: `Error ${response.status}`, description: errorMessage, type: 'error' };
       return;
     }
 

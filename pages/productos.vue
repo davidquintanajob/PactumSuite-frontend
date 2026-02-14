@@ -208,7 +208,7 @@
     </div>
     <!-- Modal de Producto -->
     <ProductoModal v-model="showModal" :producto="selectedProducto" :is-editing="isEditing" :is-viewing="isViewing"
-      @submit="handleSubmit" />
+      :is-loading="productSubmitting" @submit="handleSubmit" />
   </div>
 </template>
 
@@ -238,6 +238,7 @@ const isLoading = ref(false);
 const showModal = ref(false);
 const selectedProducto = ref(null);
 const isEditing = ref(false);
+const productSubmitting = ref(false);
 const isViewing = ref(false);
 const errorBanner = ref(null);
 const showConfirmBanner = ref(false);
@@ -589,6 +590,7 @@ onMounted(() => {
 });
 
 const handleSubmit = async (producto) => {
+  productSubmitting.value = true;
   try {
     const token = localStorage.getItem('token');
     const config = useRuntimeConfig();
@@ -680,6 +682,8 @@ const handleSubmit = async (producto) => {
       description: error.message,
       type: 'error'
     };
+  } finally {
+    productSubmitting.value = false;
   }
 };
 

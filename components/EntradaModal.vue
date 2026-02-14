@@ -7,7 +7,14 @@
     </template>
 
     <template #content>
-      <div ref="contentWrapper">
+        <div ref="contentWrapper">
+        <!-- Blocking loading overlay while submitting -->
+        <div v-if="isLoading" class="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+          <div class="bg-white rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
+            <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+            <p class="text-gray-700 font-medium">Procesando, espere...</p>
+          </div>
+        </div>
       <div v-if="message" class="mb-4">
         <MessageBanner :title="message.title" :description="message.description" :type="message.type" @close="message = null" />
       </div>
@@ -272,6 +279,7 @@ const emit = defineEmits(['update:modelValue', 'submit', 'success']);
 const form = reactive({ id_producto: null, cantidadEntrada: null, nota: '', fecha: '', costo: null, costo_usd: null });
 const selectedProducto = ref(null);
 const errorList = ref([]);
+const isLoading = ref(false);
 
 // confirm banner state
 const confirmVisible = ref(false);
@@ -362,6 +370,7 @@ async function onSubmit() {
   // If a submitHandler prop is provided, call it and wait for the created entrada
   if (props.submitHandler && typeof props.submitHandler === 'function') {
     try {
+      isLoading.value = true;
       const created = await props.submitHandler(payload);
       // If creation returned an object with id_producto proceed to fetch product
       if (created && created.id_producto) {
@@ -373,6 +382,8 @@ async function onSubmit() {
       }
     } catch (e) {
       errorList.value.push(e.message || 'Error al crear la entrada');
+    } finally {
+      isLoading.value = false;
     }
     return;
   }
@@ -480,6 +491,7 @@ async function applyProductUpdate() {
     costo_usd: Number(confirmInfo.suggestedCostoUsd).toFixed(5)
   };
   try {
+    isLoading.value = true;
     const url = `${config.public.backendHost}/Producto/updateProducto/${id}`;
     const res = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: token, Accept: 'application/json' }, body: JSON.stringify(body) });
     if (!res.ok) {
@@ -492,6 +504,7 @@ async function applyProductUpdate() {
     message.value = { title: 'Error', description: e.message || 'Error al actualizar producto', type: 'error' };
   } finally {
     confirmVisible.value = false;
+    isLoading.value = false;
     // cierre modal mostrando éxito de la entrada
     emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
     emit('update:modelValue', false);

@@ -1,5 +1,12 @@
 <template>
-  <div v-if="modelValue" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div v-if="modelValue" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <!-- Blocking loading overlay (controlled by parent via prop `isLoading`) -->
+    <div v-if="isLoading" class="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+      <div class="bg-white rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-gray-700 font-medium">Procesando, espere...</p>
+      </div>
+    </div>
     <!-- MessageBanner para mostrar estado de carga -->
     <div v-if="loadingBanner" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4 pointer-events-none">
       <MessageBanner
@@ -225,7 +232,8 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   producto: { type: Object, default: () => ({}) },
   isEditing: { type: Boolean, default: false },
-  isViewing: { type: Boolean, default: false }
+  isViewing: { type: Boolean, default: false },
+  isLoading: { type: Boolean, default: false }
 });
 const emit = defineEmits(['update:modelValue', 'submit']);
 const formData = ref({

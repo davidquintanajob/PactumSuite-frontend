@@ -1,5 +1,12 @@
 <template>
   <div v-if="modelValue" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <!-- Blocking loading overlay while submitting ventas -->
+    <div v-if="isSubmitting" class="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+      <div class="bg-white rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-gray-700 font-medium">Procesando, espere...</p>
+      </div>
+    </div>
     <div class="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">{{ propsModeTitle }}</h2>

@@ -1,16 +1,16 @@
 <template>
   <div v-if="modelValue" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
     <!-- Blocking loading overlay while submitting ventas -->
-    <div v-if="isSubmitting" class="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+    <div v-if="isSubmitting" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
       <div class="bg-white rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
         <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
         <p class="text-gray-700 font-medium">Procesando, espere...</p>
       </div>
     </div>
-    <div class="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+    <div :class="['bg-white rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto', isSubmitting && 'pointer-events-none opacity-50']">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">{{ propsModeTitle }}</h2>
-        <button @click="close" class="text-gray-500 hover:text-gray-700">
+        <button @click="close" :disabled="isSubmitting" class="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -162,8 +162,8 @@
         </div>
 
           <div class="flex justify-end gap-3">
-          <button @click="close" class="px-4 py-2 bg-gray-100 rounded">{{ isViewMode ? 'Cerrar' : 'Cancelar' }}</button>
-          <button v-if="!isViewMode" @click="submit" class="px-4 py-2 bg-primary text-white rounded">{{ props.mode === 'edit' ? 'Guardar cambios' : 'Crear Ventas' }}</button>
+          <button @click="close" :disabled="isSubmitting" class="px-4 py-2 bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed">{{ isViewMode ? 'Cerrar' : 'Cancelar' }}</button>
+          <button v-if="!isViewMode" @click="submit" :disabled="isSubmitting" class="px-4 py-2 bg-primary text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-all">{{ isSubmitting ? (props.mode === 'edit' ? 'Guardando...' : 'Creando...') : (props.mode === 'edit' ? 'Guardar cambios' : 'Crear Ventas') }}</button>
         </div>
       </div>
     </div>

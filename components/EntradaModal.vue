@@ -7,9 +7,9 @@
     </template>
 
     <template #content>
-        <div ref="contentWrapper">
+        <div ref="contentWrapper" :class="['transition-opacity', isLoading && 'pointer-events-none opacity-50']">
         <!-- Blocking loading overlay while submitting -->
-        <div v-if="isLoading" class="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
+        <div v-if="isLoading" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
           <div class="bg-white rounded-lg p-8 shadow-xl flex flex-col items-center gap-4">
             <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
             <p class="text-gray-700 font-medium">Procesando, espere...</p>
@@ -250,8 +250,8 @@
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <button v-if="!isViewing" @click="onSubmit" class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90">{{ isEditing ? 'Guardar' : 'Crear' }}</button>
-        <button @click="onRequestClose" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Cerrar</button>
+        <button v-if="!isViewing" @click="onSubmit" :disabled="isLoading" class="px-4 py-2 bg-primary text-neutral rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">{{ isLoading ? (isEditing ? 'Guardando...' : 'Creando...') : (isEditing ? 'Guardar' : 'Crear') }}</button>
+        <button @click="onRequestClose" :disabled="isLoading" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">Cerrar</button>
       </div>
     </template>
   </Modal>

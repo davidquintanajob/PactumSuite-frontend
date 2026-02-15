@@ -20,8 +20,8 @@
       </div>
       <div v-if="confirmVisible" class="mb-4">
         <ConfirmBanner
-          :title="`Actualizar costo del producto ${confirmInfo.id_producto}?`"
-          :description="`Costo actual: CUP ${Number(confirmInfo.currentCosto).toFixed(2)} - USD ${Number(confirmInfo.currentCostoUsd).toFixed(5)}.\nCosto sugerido: CUP ${Number(confirmInfo.suggestedCosto).toFixed(2)} - USD ${Number(confirmInfo.suggestedCostoUsd).toFixed(5)}.\nExistencia actual: ${confirmInfo.existingQty}, entrada: ${confirmInfo.entryQty}.`"
+          :title="`¿Actualizar costo del producto ${confirmInfo.nombre_producto}?`"
+          :description="`Costo actual: CUP ${Number(confirmInfo.currentCosto).toFixed(5)} - USD ${Number(confirmInfo.currentCostoUsd).toFixed(5)}.\nCosto sugerido: CUP ${Number(confirmInfo.suggestedCosto).toFixed(5)} - USD ${Number(confirmInfo.suggestedCostoUsd).toFixed(5)}.\nExistencia actual: ${confirmInfo.existingQty}, entrada: ${confirmInfo.entryQty}.`"
           :icon="''"
           type="warning"
           @confirm="applyProductUpdate"
@@ -47,7 +47,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Precio Unitario</label>
-              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.producto?.precio || 0).toFixed(2) }}</p>
+              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.producto?.precio || 0).toFixed(5) }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Costo USD</label>
@@ -72,7 +72,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Costo</label>
-              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.costo || 0).toFixed(2) }}</p>
+              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.costo || 0).toFixed(5) }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Costo USD</label>
@@ -80,7 +80,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Total</label>
-              <p class="mt-1 text-sm font-semibold text-gray-900">${{ (Number(entrada.cantidadEntrada) * Number(entrada.producto?.precio || 0)).toFixed(2) }}</p>
+              <p class="mt-1 text-sm font-semibold text-gray-900">${{ (Number(entrada.cantidadEntrada) * Number(entrada.producto?.precio || 0)).toFixed(5) }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Fecha</label>
@@ -138,7 +138,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Importe Total</label>
-              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.factura?.suma_general || 0).toFixed(2) }}</p>
+              <p class="mt-1 text-sm text-gray-900">${{ Number(entrada.factura?.suma_general || 0).toFixed(5) }}</p>
             </div>
           </div>
         </div>
@@ -219,11 +219,11 @@
             </div>
             <div>
               <div class="text-sm text-gray-600">Precio</div>
-              <div class="text-sm font-semibold">{{ Number(selectedProducto.precio || 0).toFixed(2) }}</div>
+              <div class="text-sm font-semibold">{{ Number(selectedProducto.precio || 0).toFixed(5) }}</div>
             </div>
             <div>
               <div class="text-sm text-gray-600">Costo</div>
-              <div class="text-sm font-semibold">{{ Number(selectedProducto.costo || 0).toFixed(2) }}</div>
+              <div class="text-sm font-semibold">{{ Number(selectedProducto.costo || 0).toFixed(5) }}</div>
             </div>
             <div>
               <div class="text-sm text-gray-600">Costo USD</div>
@@ -233,11 +233,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <div class="text-sm text-gray-600">Precio × Cantidad</div>
-              <div class="text-sm font-semibold">{{ (Number(selectedProducto.precio || 0) * Number(form.cantidadEntrada || 0)).toFixed(2) }}</div>
+              <div class="text-sm font-semibold">{{ (Number(selectedProducto.precio || 0) * Number(form.cantidadEntrada || 0)).toFixed(5) }}</div>
             </div>
             <div>
               <div class="text-sm text-gray-600">Costo × Cantidad</div>
-              <div class="text-sm font-semibold">{{ (Number(selectedProducto.costo || 0) * Number(form.cantidadEntrada || 0)).toFixed(2) }}</div>
+              <div class="text-sm font-semibold">{{ (Number(selectedProducto.costo || 0) * Number(form.cantidadEntrada || 0)).toFixed(5) }}</div>
             </div>
           </div>
         </div>
@@ -285,6 +285,7 @@ const isLoading = ref(false);
 const confirmVisible = ref(false);
 const confirmInfo = reactive({
   id_producto: null,
+  nombre_producto: '',
   currentCosto: 0,
   currentCostoUsd: 0,
   suggestedCosto: 0,
@@ -315,7 +316,7 @@ const isAdmin = computed(() => {
 const totalCUP = computed(() => {
   const q = Number(form.cantidadEntrada) || 0;
   const c = Number(form.costo) || 0;
-  return (q * c).toFixed(2);
+  return (q * c).toFixed(5);
 });
 
 const totalUSD = computed(() => {
@@ -357,6 +358,7 @@ async function onSubmit() {
   if (form.cantidadEntrada == null || Number(form.cantidadEntrada) <= 0) errorList.value.push('La cantidad debe ser mayor que 0');
   if (!form.fecha) errorList.value.push('Debe seleccionar una fecha');
   if (errorList.value.length) return;
+  
   const payload = { id_producto: form.id_producto, cantidadEntrada: Number(form.cantidadEntrada), nota: form.nota, fecha: form.fecha };
   // include costo and costo_usd only when valid numbers
   if (form.costo !== null && form.costo !== '') {
@@ -367,22 +369,27 @@ async function onSubmit() {
     const cu = Number(form.costo_usd);
     if (!isNaN(cu)) payload.costo_usd = cu;
   }
+  
   // If a submitHandler prop is provided, call it and wait for the created entrada
   if (props.submitHandler && typeof props.submitHandler === 'function') {
     try {
       isLoading.value = true;
       const created = await props.submitHandler(payload);
+      
       // If creation returned an object with id_producto proceed to fetch product
       if (created && created.id_producto) {
+        // handlePostCreate will show the confirm banner and wait for user action
+        // It will close the modal when user confirms or cancels
         await handlePostCreate(created);
       } else {
-        // fallback: emit success and close
-        emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
-        emit('update:modelValue', false);
+        console.warn('ERROR: La entrada creada no tiene id_producto. created:', created, 'payload:', payload);
+        // No cerrar automáticamente, mostrar error
+        errorList.value.push('Error: La entrada fue creada pero sin ID de producto. La confirmación del costo fue cancelada.');
+        isLoading.value = false;
       }
     } catch (e) {
+      console.error('Error en onSubmit:', e);
       errorList.value.push(e.message || 'Error al crear la entrada');
-    } finally {
       isLoading.value = false;
     }
     return;
@@ -396,8 +403,8 @@ async function handlePostCreate(createdEntrada) {
   // Fetch product data to compute weighted average
   const id = createdEntrada.id_producto || form.id_producto;
   if (!id) {
-    emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
-    emit('update:modelValue', false);
+    errorList.value.push('No se pudo obtener el ID del producto. La entrada fue creada pero sin cálculo de costo promedio.');
+    isLoading.value = false;
     return;
   }
 
@@ -416,27 +423,33 @@ async function handlePostCreate(createdEntrada) {
     try {
       const res = await fetch(u, { method: 'GET', headers: { Authorization: token, Accept: 'application/json' } });
       if (res.ok) {
-        prod = await res.json();
-        break;
+        const data = await res.json();
+        // Handle both direct object and wrapped { data: {...} } responses
+        prod = data && data.data ? data.data : data;
+        if (prod) break;
+      } else {
+        console.log(`Respuesta no ok: ${res.status}`);
       }
     } catch (e) {
-      // continue
+      console.log(`Error en obtener producto desde ${u}:`, e);
     }
   }
 
   if (!prod) {
-    // If product couldn't be fetched, just close with success
-    emit('success', { title: 'Entrada creada', description: 'Entrada agregada con éxito' });
-    emit('update:modelValue', false);
+    errorList.value.push('No se pudo obtener los datos del producto. Verifique la conexión e intente nuevamente o cierre este modal.');
+    isLoading.value = false;
     return;
   }
 
   // Determine existing and entry costs/quantities
-  const existingQty = Number(prod.cantidadExistencia) || 0;
+  // IMPORTANTE: Primero calculamos entryQty para poder restar de la existencia
+  const entryQty = Number(createdEntrada.cantidadEntrada != null ? createdEntrada.cantidadEntrada : form.cantidadEntrada) || 0;
+  
+  // La cantidad de existencia que obtenemos ya incluye la entrada, así que restamos la entrada para obtener la cantidad ANTES
+  const existingQty = (Number(prod.cantidadExistencia) || 0) - entryQty;
   const existingCosto = Number(prod.costo) || 0;
   const existingCostoUsd = Number(prod.costo_usd) || 0;
 
-  const entryQty = Number(createdEntrada.cantidadEntrada != null ? createdEntrada.cantidadEntrada : form.cantidadEntrada) || 0;
   const entryCosto = Number(createdEntrada.costo != null ? createdEntrada.costo : form.costo) || 0;
   const entryCostoUsd = Number(createdEntrada.costo_usd != null ? createdEntrada.costo_usd : form.costo_usd) || 0;
 
@@ -446,6 +459,7 @@ async function handlePostCreate(createdEntrada) {
 
   // populate confirm info and show banner
   confirmInfo.id_producto = id;
+  confirmInfo.nombre_producto = prod.nombre || `Producto ${id}`;
   confirmInfo.currentCosto = existingCosto;
   confirmInfo.currentCostoUsd = existingCostoUsd;
   confirmInfo.suggestedCosto = suggestedCosto;
@@ -453,7 +467,9 @@ async function handlePostCreate(createdEntrada) {
   confirmInfo.existingQty = existingQty;
   confirmInfo.entryQty = entryQty;
 
+  // Show the confirmation banner and reduce loading
   confirmVisible.value = true;
+  isLoading.value = false;
 }
 
 // When confirm banner appears, scroll modal content to top so banner is visible
@@ -487,7 +503,7 @@ async function applyProductUpdate() {
   const config = useRuntimeConfig();
   const token = localStorage.getItem('token');
   const body = {
-    costo: Number(confirmInfo.suggestedCosto).toFixed(2),
+    costo: Number(confirmInfo.suggestedCosto).toFixed(5),
     costo_usd: Number(confirmInfo.suggestedCostoUsd).toFixed(5)
   };
   try {
@@ -544,7 +560,7 @@ watch(() => props.modelValue, (open) => {
   } else {
     errorList.value = [];
   }
-});
+}, { immediate: false });
 
 function onCostoInput(e) {
   const val = e.target.value;
@@ -561,13 +577,7 @@ function onCostoUsdInput(e) {
   if (!val) return;
   const n = Number(val);
   if (isNaN(n) || !cambioMoneda.value) return;
-  form.costo = (n * cambioMoneda.value).toFixed(2);
+  form.costo = (n * cambioMoneda.value).toFixed(5);
 }
-
-watch(() => props.modelValue, (open) => {
-  if (!open) {
-    errorList.value = [];
-  }
-});
 </script>
 

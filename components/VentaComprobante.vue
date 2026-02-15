@@ -193,14 +193,30 @@ const formattedDate = computed(() => {
 	} catch (e) { return '' }
 });
 
+function formatNumberWithSpaces(numStr) {
+	// Divide el número en parte entera y decimal
+	const parts = numStr.split('.');
+	const integerPart = parts[0];
+	const decimalPart = parts[1] || '';
+	
+	// Agrega espacios cada 3 dígitos en la parte entera
+	const formatted = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+	
+	// Recombina con la parte decimal
+	return decimalPart ? `${formatted}.${decimalPart}` : formatted;
+}
+
 function formatMoney(v) {
 	const n = Number(v || 0);
-	return `$${n.toFixed(2)}`;
+	const formatted = n.toFixed(2);
+	const withSpaces = formatNumberWithSpaces(formatted);
+	return `$${withSpaces}`;
 }
 
 function formatQty(v) {
 	const n = Number(v || 0);
-	return Number.isInteger(n) ? n.toString() : n.toFixed(2);
+	const formatted = Number.isInteger(n) ? n.toString() : n.toFixed(2);
+	return formatNumberWithSpaces(formatted);
 }
 
 let html2pdfLoadPromise = null;

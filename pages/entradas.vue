@@ -549,6 +549,9 @@ async function createEntrada(payload) {
       ? `${config.public.backendHost}/Entrada/updateEntrada/${selectedEntrada.value.id_entrada}`
       : `${config.public.backendHost}/Entrada/createEntrada`;
     const method = isEditing.value ? 'PUT' : 'POST';
+    
+    console.log('createEntrada - Enviando payload:', payload);
+    
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json', 'Authorization': token, 'Accept': 'application/json' },
@@ -586,10 +589,38 @@ async function createEntrada(payload) {
       throw new Error(errorMessage);
     }
 
-    const data = await res.json().catch(() => null);
-    const created = data && (data.data || data) ? (data.data || data) : null;
+    // Extraer el objeto creado correctamente
+    let created = null;
+    if (responseData) {
+      // Si ya parseamos la respuesta, usarla
+      created = responseData && responseData.data ? responseData.data : responseData;
+    } else {
+      // Si no, parsear nuevamente
+      try {
+        const data = await res.json();
+        created = data && data.data ? data.data : data;
+      } catch (e) {
+        created = null;
+      }
+    }
+    
+    console.log('createEntrada - Response data:', responseData);
+    console.log('createEntrada - Created object:', created);
+    
+    // IMPORTANTE: Asegurar que el objeto creado tenga SIEMPRE el id_producto del payload
+    // porque es crítico para la confirmación del costo promedio ponderado
+    if (created && !created.id_producto && payload.id_producto) {
+      console.log('Agregando id_producto al objeto creado:', payload.id_producto);
+      created.id_producto = payload.id_producto;
+    }
+    
+    if (!created || !created.id_producto) {
+      console.warn('ADVERTENCIA: El objeto creado no tiene id_producto. created:', created, 'payload:', payload);
+    }
+    
     return created;
   } catch (e) {
+    console.error('Error en createEntrada:', e);
     throw e;
   }
 }

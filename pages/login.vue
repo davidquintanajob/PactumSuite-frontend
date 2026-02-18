@@ -136,11 +136,11 @@ const handleLogin = async () => {
       // After successful login, try to fetch exchange rate and store it as { cambio_moneda: rate }
       // If exchange-rate fails, fall back to fetching /config as before
       try {
-        const exchRes = await fetch(`${config.public.backendHost}/exchange-rate`);
+        const exchRes = await fetch(`${config.public.backendHost}/config`);
         if (exchRes.ok) {
           const exchData = await exchRes.json().catch(() => null);
-          if (exchData && exchData.rate != null) {
-            const cfgObj = { cambio_moneda: Number(exchData.rate) };
+          if (exchData && exchData.cambio_moneda != null) {
+            const cfgObj = { cambio_moneda: Number(exchData.cambio_moneda) };
             localStorage.setItem('config', JSON.stringify(cfgObj));
           } else {
             // fallback to /config

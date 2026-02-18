@@ -100,20 +100,22 @@ const currentUsdRate = ref(null)
 const currentEurRate = ref(null)
 const loadingRate = ref(false)
 
-onMounted(() => {
-  try {
-    const raw = localStorage.getItem('config')
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (parsed && parsed.cambio_moneda != null) {
-        cambio.value = String(parsed.cambio_moneda)
-      }
-    }
-  } catch (e) {
-    console.warn('No se pudo leer .config desde localStorage', e)
-  }
-
+onMounted(async () => {
   fetchExchangeRate()
+  
+  try {
+    const response = await fetch(`${config.public.backendHost}/config`)
+    if (!response.ok) {
+      console.warn('No se pudo obtener la configuración desde ' + `${config.public.backendHost}/config`)
+      return
+    }
+    const data = await response.json()
+    if (data.cambio_moneda != null) {
+      cambio.value = String(data.cambio_moneda)
+    }
+  } catch (error) {
+    console.error('Error al obtener configuración:', error)
+  }
 })
 
 const fetchExchangeRate = async () => {

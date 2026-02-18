@@ -177,16 +177,16 @@
             <div class="text-lg font-bold">{{ (paginationData.sumCantidad ?? 0) }}</div>
           </div>
           <div class="bg-green-100 text-green-800 rounded p-3">
-            <div class="text-sm font-medium">Suma Total CUP vendido (Efectivo y Transferencia)</div>
-            <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0)) || 0).toFixed(2) }}</div>
+            <div class="text-sm font-medium">Suma Total convertido a CUP vendido (Efectivo y Transferencia)</div>
+            <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0) + ((paginationData.sumEfectivoUSD ?? 0) * cambioMoneda) + ((paginationData.sumTransferenciaUSD ?? 0) * cambioMoneda)) || 0).toFixed(2) }}</div>
           </div>
           <div v-if="!isVendedor" class="bg-blue-100 text-blue-800 rounded p-3">
-            <div class="text-sm font-medium">Suma Total Costos CUP de las ventas</div>
+            <div class="text-sm font-medium">Suma Total Costos convertido a CUP de las ventas</div>
             <div class="text-lg font-bold">{{ (((paginationData.sumCostoVenta ?? 0)) || 0).toFixed(2) }}</div>
           </div>
           <div v-if="!isVendedor" class="bg-yellow-100 text-yellow-800 rounded p-3">
-            <div class="text-sm font-medium">Ganancia Total</div>
-            <div class="text-lg font-bold">{{ ((((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0)) - ((paginationData.sumCostoVenta ?? 0))) || 0).toFixed(2) }}</div>
+            <div class="text-sm font-medium">Ganancia Total convertida a CUP</div>
+            <div class="text-lg font-bold">{{ ((((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0) + ((paginationData.sumEfectivoUSD ?? 0) * cambioMoneda) + ((paginationData.sumTransferenciaUSD ?? 0) * cambioMoneda)) - ((paginationData.sumCostoVenta ?? 0))) || 0).toFixed(2) }}</div>
           </div>
         </div>
 
@@ -300,6 +300,25 @@ const errorBanner = ref(null);
 // Confirmación de eliminación
 const showConfirmBanner = ref(false);
 const ventaAEliminar = ref(null);
+
+// ---------- CAMBIO DE MONEDA ----------
+const cambioMoneda = ref(1);
+
+function loadCambioMoneda() {
+  try {
+    const cfg = localStorage.getItem('config');
+    if (cfg) {
+      const parsed = JSON.parse(cfg);
+      const cm = Number(parsed?.cambio_moneda);
+      cambioMoneda.value = (cm && cm > 0) ? cm : 1;
+    } else {
+      cambioMoneda.value = 1;
+    }
+  } catch (e) {
+    cambioMoneda.value = 1;
+  }
+}
+// ----------------------------------
 
 const ventasColumns = computed(() => {
   if (viewMode.value === 'normal') {
@@ -955,6 +974,9 @@ async function confirmDeleteVenta() {
 }
 
 onMounted(() => {
+  // 🔁 Cargar el cambio de moneda al montar el componente
+  loadCambioMoneda();
+
   // Inicializar filtros de fecha con la fecha actual del dispositivo si están vacíos
   const today = new Date();
   const yyyy = today.getFullYear();

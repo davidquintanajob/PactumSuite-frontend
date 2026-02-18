@@ -174,19 +174,19 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div class="bg-gray-100 text-gray-800 rounded p-3">
             <div class="text-sm font-medium">Suma Cantidad de productos vendidos</div>
-            <div class="text-lg font-bold">{{ (paginationData.sumCantidad ?? 0) }}</div>
+            <div class="text-lg font-bold">{{ formatNumber(paginationData.sumCantidad ?? 0, 0) }}</div>
           </div>
           <div class="bg-green-100 text-green-800 rounded p-3">
-            <div class="text-sm font-medium">Suma Total convertido a CUP vendido (Efectivo y Transferencia)</div>
-            <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0) + ((paginationData.sumEfectivoUSD ?? 0) * cambioMoneda) + ((paginationData.sumTransferenciaUSD ?? 0) * cambioMoneda)) || 0).toFixed(2) }}</div>
+            <div class="text-sm font-medium">Suma Total CUP vendido (Efectivo y Transferencia)</div>
+            <div class="text-lg font-bold">{{ formatNumber(paginationData.sumTotalVentas ?? 0, 2) }}</div>
           </div>
           <div v-if="!isVendedor" class="bg-blue-100 text-blue-800 rounded p-3">
-            <div class="text-sm font-medium">Suma Total Costos convertido a CUP de las ventas</div>
-            <div class="text-lg font-bold">{{ (((paginationData.sumCostoVenta ?? 0)) || 0).toFixed(2) }}</div>
+            <div class="text-sm font-medium">Suma Total Costos CUP de las ventas</div>
+            <div class="text-lg font-bold">{{ formatNumber(paginationData.sumCostoVenta ?? 0, 2) }}</div>
           </div>
           <div v-if="!isVendedor" class="bg-yellow-100 text-yellow-800 rounded p-3">
-            <div class="text-sm font-medium">Ganancia Total convertida a CUP</div>
-            <div class="text-lg font-bold">{{ ((((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0) + ((paginationData.sumEfectivoUSD ?? 0) * cambioMoneda) + ((paginationData.sumTransferenciaUSD ?? 0) * cambioMoneda)) - ((paginationData.sumCostoVenta ?? 0))) || 0).toFixed(2) }}</div>
+            <div class="text-sm font-medium">Ganancia Total en CUP</div>
+            <div class="text-lg font-bold">{{ formatNumber(((paginationData.sumTotalVentas ?? 0) - (paginationData.sumCostoVenta ?? 0)) || 0, 2) }}</div>
           </div>
         </div>
 
@@ -199,11 +199,11 @@
               <div class="grid grid-cols-1 gap-4 text-center">
                 <div class="bg-purple-50 text-purple-800 rounded p-3">
                   <div class="text-sm font-medium">Total Efectivo CUP</div>
-                  <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoCUP ?? 0)) || 0).toFixed(2) }}</div>
+                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumEfectivoCUP ?? 0, 2) }}</div>
                 </div>
                 <div class="bg-purple-100 text-purple-800 rounded p-3">
                   <div class="text-sm font-medium">Total Efectivo USD</div>
-                  <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoUSD ?? 0)) || 0).toFixed(5) }}</div>
+                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumEfectivoUSD ?? 0, 5) }}</div>
                 </div>
               </div>
             </div>
@@ -213,11 +213,11 @@
               <div class="grid grid-cols-1 gap-4 text-center">
                 <div class="bg-indigo-50 text-indigo-800 rounded p-3">
                   <div class="text-sm font-medium">Total Transferencia CUP</div>
-                  <div class="text-lg font-bold">{{ (((paginationData.sumTransferenciaCUP ?? 0)) || 0).toFixed(2) }}</div>
+                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumTransferenciaCUP ?? 0, 2) }}</div>
                 </div>
                 <div class="bg-indigo-100 text-indigo-800 rounded p-3">
                   <div class="text-sm font-medium">Total Transferencia USD</div>
-                  <div class="text-lg font-bold">{{ (((paginationData.sumTransferenciaUSD ?? 0)) || 0).toFixed(5) }}</div>
+                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumTransferenciaUSD ?? 0, 5) }}</div>
                 </div>
               </div>
             </div>
@@ -278,6 +278,19 @@ function formatTime12(timeStr) {
   hh = hh % 12;
   if (hh === 0) hh = 12;
   return `${hh}:${mm} ${ampm}`;
+}
+
+// Formatea números con separador de miles ' ' y decimales configurables
+function formatNumber(value, decimals = 2) {
+  const n = Number(value);
+  if (!isFinite(n)) return (0).toFixed(decimals);
+  if (decimals === 0) {
+    return String(Math.trunc(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+  const fixed = n.toFixed(decimals);
+  const parts = fixed.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return parts.join('.');
 }
 
 const currentPage = ref(1);
@@ -751,6 +764,8 @@ async function fetchItems(page = 1, limit = 20) {
         paginationData.value.sumCantidad = sumCantidad;
         paginationData.value.sumCostoVenta = sumCostoVenta;
         paginationData.value.sumPrecioCobrado = sumPrecioCobrado;
+        // Nuevo: suma total de todas las ventas (precio_cobrado * cantidad)
+        paginationData.value.sumTotalVentas = sumPrecioCobrado;
         paginationData.value.sumPrecioCobradoUSD = sumPrecioCobradoUSD;
         paginationData.value.sumCostoVentaUSD = sumCostoVentaUSD;
         paginationData.value.sumGananciaTotalUSD = sumGananciaTotalUSD;

@@ -137,45 +137,90 @@
       <DataTable :columns="ventasColumns" :items="itemsData" :actions="isInvitado ? [] : ventasActions" :total-items="totalItems"
         :items-per-page="itemsPorPage" :current-page="currentPage" :is-loading="isLoading"
         @page-change="handlePageChange" @row-click="handleRowClick" />
-      <!-- Resumen con sumatorios devueltos por la API -->
-      <div v-if="viewMode === 'normal'" class="mt-6 bg-white rounded-lg shadow-md p-4 w-[95%] mx-auto">
-        <h3 class="text-xl font-semibold mb-4">Resumen de Totales</h3>
-        <!-- Resumen en USD (derivado en cliente) -->
-        <div class="mb-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div class="bg-gray-50 text-gray-800 rounded p-3">
-            <div class="text-sm font-medium">Suma Cantidad (USD)</div>
-            <div class="text-lg font-bold">{{ (paginationData.sumCantidad ?? 0) }}</div>
-          </div>
-          <div class="bg-green-50 text-green-800 rounded p-3">
-            <div class="text-sm font-medium">Precio Cobrado * Cantidad (USD)</div>
-            <div class="text-lg font-bold">{{ (((paginationData.sumPrecioCobradoUSD ?? 0)) || 0).toFixed(5) }}</div>
-          </div>
-          <div v-if="!isVendedor" class="bg-blue-50 text-blue-800 rounded p-3">
-            <div class="text-sm font-medium">CostoVenta * Cantidad (USD)</div>
-            <div class="text-lg font-bold">{{ (((paginationData.sumCostoVentaUSD ?? 0)) || 0).toFixed(5) }}</div>
-          </div>
-          <div v-if="!isVendedor" class="bg-yellow-50 text-yellow-800 rounded p-3">
-            <div class="text-sm font-medium">Ganancia Total (USD)</div>
-            <div class="text-lg font-bold">{{ ((((paginationData.sumPrecioCobradoUSD ?? 0)) - ((paginationData.sumCostoVentaUSD ?? 0))) || 0).toFixed(5) }}</div>
+      
+      <!-- Selector de límite de elementos por página -->
+      <div class="mt-4 bg-white rounded-lg shadow-md p-4 w-[95%] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex flex-col md:flex-row md:items-center gap-4">
+          <label class="text-sm font-medium text-gray-700">Elementos por página:</label>
+          <div class="relative w-32">
+            <input 
+              v-model.number="itemsPorPage"
+              type="number"
+              min="1"
+              max="1000"
+              list="itemsPerPageOptions"
+              @change="handleItemsPerPageChange"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+              :disabled="isLoading"
+            />
+            <datalist id="itemsPerPageOptions">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+            </datalist>
           </div>
         </div>
+        <div class="text-sm text-gray-600">
+          Total: <span class="font-semibold">{{ totalItems }}</span> elementos
+        </div>
+      </div>
 
+      <!-- Resumen con sumatorios devueltos por la API -->
+      <div v-if="viewMode === 'normal'" class="mt-6 bg-white rounded-lg shadow-md p-4 w-[95%] mx-auto">
+        <h3 class="text-xl font-semibold mb-4">Resumen de Totales - Reporte de las {{ itemsPorPage }} elementos</h3>
+        <!-- Resumen en CUP -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div class="bg-gray-100 text-gray-800 rounded p-3">
-            <div class="text-sm font-medium">Suma Cantidad</div>
+            <div class="text-sm font-medium">Suma Cantidad de productos vendidos</div>
             <div class="text-lg font-bold">{{ (paginationData.sumCantidad ?? 0) }}</div>
           </div>
           <div class="bg-green-100 text-green-800 rounded p-3">
-            <div class="text-sm font-medium">Precio Cobrado * Cantidad</div>
-            <div class="text-lg font-bold">{{ (((paginationData.sumPrecioCobrado ?? 0)) || 0).toFixed(2) }}</div>
+            <div class="text-sm font-medium">Suma Total CUP vendido (Efectivo y Transferencia)</div>
+            <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0)) || 0).toFixed(2) }}</div>
           </div>
           <div v-if="!isVendedor" class="bg-blue-100 text-blue-800 rounded p-3">
-            <div class="text-sm font-medium">CostoVenta * Cantidad</div>
+            <div class="text-sm font-medium">Suma Total Costos CUP de las ventas</div>
             <div class="text-lg font-bold">{{ (((paginationData.sumCostoVenta ?? 0)) || 0).toFixed(2) }}</div>
           </div>
           <div v-if="!isVendedor" class="bg-yellow-100 text-yellow-800 rounded p-3">
             <div class="text-sm font-medium">Ganancia Total</div>
-            <div class="text-lg font-bold">{{ ((((paginationData.sumPrecioCobrado ?? 0)) - ((paginationData.sumCostoVenta ?? 0))) || 0).toFixed(2) }}</div>
+            <div class="text-lg font-bold">{{ ((((paginationData.sumEfectivoCUP ?? 0) + (paginationData.sumTransferenciaCUP ?? 0)) - ((paginationData.sumCostoVenta ?? 0))) || 0).toFixed(2) }}</div>
+          </div>
+        </div>
+
+        <!-- Nuevo reporte: Suma de Efectivo y Transferencia -->
+        <div class="mt-6 pt-6 border-t border-gray-300">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Suma de Efectivo -->
+            <div>
+              <h4 class="text-lg font-semibold mb-3">Suma de Efectivo</h4>
+              <div class="grid grid-cols-1 gap-4 text-center">
+                <div class="bg-purple-50 text-purple-800 rounded p-3">
+                  <div class="text-sm font-medium">Total Efectivo CUP</div>
+                  <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoCUP ?? 0)) || 0).toFixed(2) }}</div>
+                </div>
+                <div class="bg-purple-100 text-purple-800 rounded p-3">
+                  <div class="text-sm font-medium">Total Efectivo USD</div>
+                  <div class="text-lg font-bold">{{ (((paginationData.sumEfectivoUSD ?? 0)) || 0).toFixed(5) }}</div>
+                </div>
+              </div>
+            </div>
+            <!-- Suma de Transferencia -->
+            <div>
+              <h4 class="text-lg font-semibold mb-3">Suma de Transferencia</h4>
+              <div class="grid grid-cols-1 gap-4 text-center">
+                <div class="bg-indigo-50 text-indigo-800 rounded p-3">
+                  <div class="text-sm font-medium">Total Transferencia CUP</div>
+                  <div class="text-lg font-bold">{{ (((paginationData.sumTransferenciaCUP ?? 0)) || 0).toFixed(2) }}</div>
+                </div>
+                <div class="bg-indigo-100 text-indigo-800 rounded p-3">
+                  <div class="text-sm font-medium">Total Transferencia USD</div>
+                  <div class="text-lg font-bold">{{ (((paginationData.sumTransferenciaUSD ?? 0)) || 0).toFixed(5) }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -238,7 +283,7 @@ function formatTime12(timeStr) {
 const currentPage = ref(1);
 const totalItems = ref(0);
 const isLoading = ref(false);
-const itemsPorPage = ref(20);
+const itemsPorPage = ref(50);
 const itemsData = ref([]);
 const paginationData = ref({});
 
@@ -607,13 +652,20 @@ async function fetchItems(page = 1, limit = 20) {
 
       itemsData.value = mapped;
       totalItems.value = data.pagination ? data.pagination.total : (mapped.length);
-      paginationData.value = data.pagination || {};
-
+      
       // Calcular totales en USD dividendo por el cambioUSD_al_vender de cada venta
       try {
         let sumPrecioCobradoUSD = 0;
         let sumCostoVentaUSD = 0;
         let sumGananciaTotalUSD = 0;
+        let sumEfectivoCUP = 0;
+        let sumEfectivoUSD = 0;
+        let sumTransferenciaCUP = 0;
+        let sumTransferenciaUSD = 0;
+        let sumCantidad = 0;
+        let sumCostoVenta = 0;
+        let sumPrecioCobrado = 0;
+        
         (data.data || []).forEach(listItem => {
           const ventasArr = Array.isArray(listItem.ventas) ? listItem.ventas : [];
           ventasArr.forEach(v => {
@@ -621,20 +673,76 @@ async function fetchItems(page = 1, limit = 20) {
             const cantidad = Number(v.cantidad) || 0;
             const cambio = parseFloat(v.cambioUSD_al_vender) || 0;
             const costo = (parseFloat(v.costo_venta) || parseFloat(v.costoVenta) || 0);
+            const formaPago = String(v.forma_pago || '').toLowerCase();
+            const cantidadPagadaTransferencia = parseFloat(v.cantidad_pagada_transferencia_cup) || 0;
+            
+            // Sumar totales generales
+            sumCantidad += cantidad;
+            sumCostoVenta += costo * cantidad;
+            sumPrecioCobrado += precio * cantidad;
+            
             if (cambio && cambio !== 0) {
               sumPrecioCobradoUSD += (precio * cantidad) / cambio;
               sumCostoVentaUSD += (costo * cantidad) / cambio;
               sumGananciaTotalUSD += ((precio - costo) * cantidad) / cambio;
             }
+            
+            // Calcular Suma de Efectivo CUP
+            if (formaPago.includes('efectivo')) {
+              if (formaPago === 'efectivo cup') {
+                // Solo Efectivo CUP: sumar precio * cantidad
+                const montoCUP = precio * cantidad;
+                sumEfectivoCUP += montoCUP;
+              } else if (formaPago.includes('efectivo') && formaPago.includes('transferencia')) {
+                // Efectivo y Transferencia: sumar (precio * cantidad - cantidad_pagada_transferencia)
+                const montoCUP = (precio * cantidad) - cantidadPagadaTransferencia;
+                sumEfectivoCUP += montoCUP;
+              }
+            }
+            
+            // Calcular Suma de Transferencia CUP
+            if (formaPago.includes('transferencia')) {
+              if (formaPago === 'transferencia cup') {
+                // Solo Transferencia CUP: sumar precio * cantidad
+                const montoCUP = precio * cantidad;
+                sumTransferenciaCUP += montoCUP;
+              } else if (formaPago.includes('efectivo') && formaPago.includes('transferencia')) {
+                // Efectivo y Transferencia: sumar cantidad_pagada_transferencia
+                const montoCUP = cantidadPagadaTransferencia;
+                sumTransferenciaCUP += montoCUP;
+              }
+            }
+            
+            // Calcular Suma de Efectivo USD
+            if (formaPago === 'efectivo usd') {
+              const montoUSD = (precio * cantidad) / (cambio && cambio !== 0 ? cambio : 1);
+              sumEfectivoUSD += montoUSD;
+            }
+            
+            // Calcular Suma de Transferencia USD
+            if (formaPago === 'transferencia usd') {
+              const montoUSD = (precio * cantidad) / (cambio && cambio !== 0 ? cambio : 1);
+              sumTransferenciaUSD += montoUSD;
+            }
           });
         });
-        // añadir valores derivados a paginationData para mostrarlos en la UI
+        
+        // Asignar todos los valores calculados a paginationData, sobrescribiendo los del backend
+        paginationData.value = data.pagination || {};
+        paginationData.value.sumCantidad = sumCantidad;
+        paginationData.value.sumCostoVenta = sumCostoVenta;
+        paginationData.value.sumPrecioCobrado = sumPrecioCobrado;
         paginationData.value.sumPrecioCobradoUSD = sumPrecioCobradoUSD;
         paginationData.value.sumCostoVentaUSD = sumCostoVentaUSD;
         paginationData.value.sumGananciaTotalUSD = sumGananciaTotalUSD;
+        paginationData.value.sumEfectivoCUP = sumEfectivoCUP;
+        paginationData.value.sumEfectivoUSD = sumEfectivoUSD;
+        paginationData.value.sumTransferenciaCUP = sumTransferenciaCUP;
+        paginationData.value.sumTransferenciaUSD = sumTransferenciaUSD;
       } catch (e) {
-        // Silencioso: si algo falla dejamos los valores por defecto del backend
-        console.error('Error calculando totales USD:', e);
+        // Si algo falla, asignar valores del backend
+        paginationData.value = data.pagination || {};
+        console.error('Error calculando totales:', e);
       }
     } else {
       // modo detallado: cada elemento es una venta individual
@@ -681,6 +789,11 @@ const handleSearch = async () => {
 };
 
 const handleModeChange = async () => {
+  currentPage.value = 1;
+  await fetchItems(1, itemsPorPage.value);
+};
+
+const handleItemsPerPageChange = async () => {
   currentPage.value = 1;
   await fetchItems(1, itemsPorPage.value);
 };

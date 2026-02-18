@@ -7,7 +7,7 @@
         <p class="text-gray-700 font-medium">Procesando, espere...</p>
       </div>
     </div>
-    <div :class="['bg-white rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto', isSubmitting && 'pointer-events-none opacity-50']">
+    <div :class="['bg-white rounded-lg p-6 w-full max-w-7xl max-h-[80vh] overflow-y-auto', isSubmitting && 'pointer-events-none opacity-50']">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">{{ propsModeTitle }}</h2>
         <button @click="close" :disabled="isSubmitting" class="text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -75,47 +75,100 @@
       <div>
         <div class="mb-4">
           <div class="grid grid-cols-1 gap-4">
-            <div v-for="(item, idx) in ventas" :key="item._id" class="p-3 border rounded bg-gray-50">
-              <div class="flex flex-col md:flex-row md:items-end md:gap-4">
-                <div class="flex-1 grid grid-cols-1 md:grid-cols-5 gap-2 items-center">
-                  <div class="flex flex-col items-center md:col-span-3">
-                    <label class="block text-sm text-gray-700 mb-1 text-center">Producto</label>
-                    <div class="flex items-center gap-3 w-full">
-                      <img :src="getItemImageSrc(item)" @error="onImgError($event)"
-                        class="w-14 h-14 rounded-full object-cover bg-white border" alt="foto-producto" />
-                      <div class="flex-1 w-full">
-                        <SelectSearchAPI
-                          v-model="item.id_producto"
-                          :disabled="isViewMode"
-                          endpoint="/producto/filterProductos/1/10"
-                          method="POST"
-                          search-key="nombre"
-                          label-key="nombre"
-                          value-key="id_producto"
-                          :initial-label="item.initialLabel"
-                          placeholder="Buscar producto..."
-                          @producto-seleccionado="(p) => onProductoSeleccionado(p, idx)"
-                        />
-                      </div>
-                    </div>
+            <div v-for="(item, idx) in ventas" :key="item._id" class="p-2 sm:p-3 border rounded bg-gray-50">
+              <!-- Desktop layout: horizontal -->
+              <div class="hidden sm:flex items-center gap-2 w-full">
+                <!-- Imagen del producto -->
+                <img :src="getItemImageSrc(item)" @error="onImgError($event)"
+                  class="w-10 h-10 rounded-full object-cover bg-white border flex-shrink-0" alt="foto-producto" />
+                
+                <!-- Producto + Cantidad + Precio Cobrado + A Transferencia (si aplica) -->
+                <div class="flex items-end gap-2 flex-1">
+                  <!-- Producto (expandible) -->
+                  <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs text-gray-600 mb-1">Producto</label>
+                    <SelectSearchAPI
+                      v-model="item.id_producto"
+                      :disabled="isViewMode"
+                      endpoint="/producto/filterProductos/1/10"
+                      method="POST"
+                      search-key="nombre"
+                      label-key="nombre"
+                      value-key="id_producto"
+                      :initial-label="item.initialLabel"
+                      placeholder="Buscar..."
+                      @producto-seleccionado="(p) => onProductoSeleccionado(p, idx)"
+                    />
                   </div>
-                  <div class="flex flex-col items-center md:col-span-1">
-                    <label class="block text-sm text-gray-700 mb-1 text-center">Cantidad</label>
-                    <input type="number" v-model.number="item.cantidad" :disabled="isViewMode" min="1" class="w-full px-3 py-2 rounded border text-center" />
+                  
+                  <!-- Cantidad -->
+                  <div class="min-w-[70px]">
+                    <label class="block text-xs text-gray-600 mb-1">Cant.</label>
+                    <input type="number" v-model.number="item.cantidad" :disabled="isViewMode" min="1" class="w-full px-2 py-1 rounded border text-center text-sm" />
                   </div>
-                  <div class="flex flex-col items-center md:col-span-1">
-                    <label class="block text-sm text-gray-700 mb-1 text-center">Precio Cobrado</label>
-                    <input type="number" step="0.01" v-model.number="item.precio_cobrado" :disabled="isViewMode" class="w-full px-3 py-2 rounded border text-center" />
+                  
+                  <!-- Precio Cobrado -->
+                  <div class="min-w-[85px]">
+                    <label class="block text-xs text-gray-600 mb-1">Precio</label>
+                    <input type="number" step="0.01" v-model.number="item.precio_cobrado" :disabled="isViewMode" class="w-full px-2 py-1 rounded border text-center text-sm" />
                   </div>
-                </div>
-                <div class="flex items-start md:items-center md:ml-4">
-                  <button v-if="!isViewMode" type="button" @click="removeVenta(idx)" class="ml-auto px-3 py-2 bg-red-500 text-white rounded flex items-center gap-2">
-                    <!-- Trash icon -->
+                  
+                  <!-- A Transferencia (si aplica) -->
+                  <div v-if="formaPago === 'Efectivo y Transferencia'" class="min-w-[85px]">
+                    <label class="block text-xs text-gray-600 mb-1">Transfer. <span class="text-xs text-gray-500">Límite: CUP {{ formatMoney(Number(item.cantidad || 0) * Number(item.precio_cobrado || 0)) }}</span></label>
+                    <input type="number" step="0.01" min="0" :max="(Number(item.cantidad || 0) * Number(item.precio_cobrado || 0))" v-model.number="item.cantidad_pagada_transferencia_cup" :disabled="isViewMode" class="w-full px-2 py-1 rounded border text-center text-sm" />
+                  </div>
+                  
+                  <!-- Botón eliminar -->
+                  <button v-if="!isViewMode" type="button" @click="removeVenta(idx)" class="px-2 py-1 bg-red-500 text-white rounded flex items-center gap-1 text-sm hover:bg-red-600 flex-shrink-0" title="Eliminar">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
                     </svg>
-                    Eliminar
                   </button>
+                </div>
+              </div>
+
+              <!-- Mobile layout: stacked -->
+              <div class="block sm:hidden">
+                <div class="flex items-center gap-2 mb-2">
+                  <img :src="getItemImageSrc(item)" @error="onImgError($event)"
+                    class="w-12 h-12 rounded-full object-cover bg-white border flex-shrink-0" alt="foto-producto" />
+                  <div class="flex-1">
+                    <label class="block text-xs text-gray-600 mb-1">Producto</label>
+                    <SelectSearchAPI
+                      v-model="item.id_producto"
+                      :disabled="isViewMode"
+                      endpoint="/producto/filterProductos/1/10"
+                      method="POST"
+                      search-key="nombre"
+                      label-key="nombre"
+                      value-key="id_producto"
+                      :initial-label="item.initialLabel"
+                      placeholder="Buscar..."
+                      @producto-seleccionado="(p) => onProductoSeleccionado(p, idx)"
+                    />
+                  </div>
+                  <button v-if="!isViewMode" type="button" @click="removeVenta(idx)" class="px-2 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">Cantidad</label>
+                    <input type="number" v-model.number="item.cantidad" :disabled="isViewMode" min="1" class="w-full px-2 py-1 rounded border text-center text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-600 mb-1">Precio</label>
+                    <input type="number" step="0.01" v-model.number="item.precio_cobrado" :disabled="isViewMode" class="w-full px-2 py-1 rounded border text-center text-sm" />
+                  </div>
+                </div>
+                
+                <div v-if="formaPago === 'Efectivo y Transferencia'">
+                  <label class="block text-xs text-gray-600 mb-1">A Transferencia <span class="text-xs text-gray-500">Límite: CUP {{ formatMoney(Number(item.cantidad || 0) * Number(item.precio_cobrado || 0)) }}</span></label>
+                  <input type="number" step="0.01" min="0" :max="(Number(item.cantidad || 0) * Number(item.precio_cobrado || 0))" v-model.number="item.cantidad_pagada_transferencia_cup" :disabled="isViewMode" class="w-full px-2 py-1 rounded border text-center text-sm" />
                 </div>
               </div>
             </div>
@@ -134,6 +187,12 @@
             <div class="text-xl font-bold">CUP {{ formatMoney(totalSeleccionado) }} - USD: {{ formatMoney(totalSeleccionado / cambioMoneda) }}</div>
           </div>
 
+          <div v-if="formaPago === 'Efectivo y Transferencia'" class="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+            <div class="text-sm font-medium text-gray-700">Total pagado por transferencia</div>
+            <div class="text-lg font-bold text-blue-600">CUP {{ formatMoney(totalPagadoTransferencia) }}</div>
+            <div class="text-sm text-gray-600 mt-1">Efectivo: CUP {{ formatMoney(totalSeleccionado - totalPagadoTransferencia) }}</div>
+          </div>
+
           <!-- Nota global y forma de pago -->
           <div class="mt-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">Nota (opcional)</label>
@@ -141,19 +200,15 @@
           </div>
           <div class="mt-3">
             <div class="mb-1 text-sm font-medium text-gray-700">Forma de pago</div>
-            <div class="relative flex w-full max-w-xs">
-              <div
-                class="absolute top-0 left-0 h-full bg-primary rounded-lg transition-all duration-300"
-                :style="{ width: '33.3333%', left: (formaPagoOptions.indexOf(formaPago) * 33.3333) + '%' }"
-              ></div>
+            <div class="flex flex-wrap w-full gap-2 md:max-w-xs">
               <button
                 v-for="opt in formaPagoOptions"
                 :key="opt"
                 type="button"
                 @click="formaPago = opt"
                 :disabled="isViewMode"
-                class="relative flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-300 z-10"
-                :class="(formaPago === opt) ? 'text-neutral bg-transparent' : 'text-dark bg-secondary'"
+                class="flex-1 px-4 py-2 rounded-lg font-medium transition-all duration-300 text-center"
+                :class="(formaPago === opt) ? 'text-neutral bg-primary' : 'text-dark bg-secondary'"
               >
                 {{ opt }}
               </button>
@@ -187,7 +242,7 @@ const emit = defineEmits(['update:modelValue', 'submit', 'open-comprobante']);
 const ventas = ref([]);
 const currentUsuarioNombre = ref('');
 const notaVenta = ref('');
-const formaPagoOptions = ['Efectivo CUP', 'Efectivo USD', 'Transferencia'];
+const formaPagoOptions = ['Efectivo CUP', 'Efectivo USD', 'Transferencia CUP', 'Transferencia USD', 'Efectivo y Transferencia'];
 const formaPago = ref(formaPagoOptions[0]);
 const isSubmitting = ref(false);
 const loadingBanner = ref(null);
@@ -299,6 +354,30 @@ const totalSeleccionado = computed(() => {
   }, 0);
 });
 
+const totalPagadoTransferencia = computed(() => {
+  if (formaPago.value !== 'Efectivo y Transferencia') return 0;
+  return ventas.value.reduce((acc, v) => {
+    if (!v || !v.id_producto) return acc;
+    const cpt = Number(v.cantidad_pagada_transferencia_cup || 0);
+    return acc + cpt;
+  }, 0);
+});
+
+// Clamp cada cantidad_pagada_transferencia_cup per item
+watch(() => ventas.value, () => {
+  ventas.value.forEach(v => {
+    if (v && v.id_producto) {
+      const itemTotal = Number(v.cantidad || 0) * Number(v.precio_cobrado || 0);
+      if (Number(v.cantidad_pagada_transferencia_cup) > itemTotal) {
+        v.cantidad_pagada_transferencia_cup = itemTotal;
+      }
+      if (Number(v.cantidad_pagada_transferencia_cup) < 0) {
+        v.cantidad_pagada_transferencia_cup = 0;
+      }
+    }
+  });
+}, { deep: true });
+
 function newItem() {
   return {
     _id: `${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
@@ -307,7 +386,8 @@ function newItem() {
     costo_venta: 0,
     precio_original_venta: 0,
     precio_cobrado: 0,
-    initialLabel: ''
+    initialLabel: '',
+    cantidad_pagada_transferencia_cup: 0
   };
 }
 
@@ -696,6 +776,14 @@ async function submit() {
         errorBanner.value = { title: 'Error', description: 'Cantidad y Precio Cobrado deben ser >= 0 en cada elemento.', type: 'error' };
         return;
       }
+      // Validate cantidad_pagada_transferencia_cup per item if in split payment mode
+      if (formaPago.value === 'Efectivo y Transferencia') {
+        const itemTotal = Number(v.cantidad) * Number(v.precio_cobrado);
+        if (Number(v.cantidad_pagada_transferencia_cup || 0) > itemTotal) {
+          errorBanner.value = { title: 'Error', description: `La cantidad pagada por transferencia en un elemento no puede ser mayor que su subtotal (${formatMoney(itemTotal)}).`, type: 'error' };
+          return;
+        }
+      }
     }
 
     // Build body
@@ -713,12 +801,13 @@ async function submit() {
 
     const body = {
       nota: notaVenta.value || '',
-        ventas: itemsToSend.map(v => ({
+      ventas: itemsToSend.map(v => ({
         id_producto: Number(v.id_producto),
         id_usuario: id_usuario,
         cambioUSD_al_vender: cambioMoneda.value,
         cantidad: Number(v.cantidad) || 0,
-          forma_pago: formaPago.value,
+        forma_pago: formaPago.value,
+        cantidad_pagada_transferencia_cup: (formaPago.value === 'Efectivo y Transferencia') ? (Number(v.cantidad_pagada_transferencia_cup) || 0) : 0,
         costo_venta: v.productoObj ? Number(v.productoObj.costo || 0) : Number(v.costo_venta || 0),
         precio_original_venta: v.productoObj ? Number(v.productoObj.precio || 0) : Number(v.precio_original_venta || 0),
         precio_cobrado: Number(v.precio_cobrado) || 0,
@@ -874,9 +963,9 @@ watch(() => props.modelValue, (val) => {
         precio_original_venta: v.precio_original_venta || 0,
         precio_cobrado: Number(v.precio_cobrado) || 0,
         forma_pago: v.forma_pago || '',
-        // initialLabel is used by SelectSearchAPI to show the product name on load
-            initialLabel: v.producto ? (v.producto.nombre || '') : '',
-            productoObj: v.producto || null
+        initialLabel: v.producto ? (v.producto.nombre || '') : '',
+        productoObj: v.producto || null,
+        cantidad_pagada_transferencia_cup: Number(v.cantidad_pagada_transferencia_cup) || 0
       })) : []);
       notaVenta.value = props.initialData.nota || '';
       // derive formaPago from first venta if exists (normalize various shapes)
@@ -891,15 +980,39 @@ watch(() => props.modelValue, (val) => {
         if (!fp) {
           formaPago.value = formaPagoOptions[0];
         } else {
+          const lfp = fp.toLowerCase();
           // try exact match first
-          const found = formaPagoOptions.find(o => o.toLowerCase() === fp.toLowerCase());
-          if (found) formaPago.value = found;
-          else if (fp.toLowerCase().includes('transfer')) formaPago.value = 'Transferencia';
-          else if (fp.toLowerCase().includes('efectivo') && fp.toLowerCase().includes('usd')) formaPago.value = 'Efectivo USD';
-          else if (fp.toLowerCase().includes('efectivo') && fp.toLowerCase().includes('cup')) formaPago.value = 'Efectivo CUP';
-          else if (fp.toLowerCase().includes('efectivo')) formaPago.value = 'Efectivo CUP';
-          else formaPago.value = formaPagoOptions[0];
+          const found = formaPagoOptions.find(o => o.toLowerCase() === lfp);
+          if (found) {
+            formaPago.value = found;
+          } else if (lfp.includes('efectivo') && lfp.includes('transfer')) {
+            formaPago.value = 'Efectivo y Transferencia';
+          } else if (lfp.includes('transfer') && lfp.includes('usd')) {
+            formaPago.value = 'Transferencia USD';
+          } else if (lfp.includes('transfer') && lfp.includes('cup')) {
+            formaPago.value = 'Transferencia CUP';
+          } else if (lfp.includes('transfer')) {
+            // default to CUP if no currency specified
+            formaPago.value = 'Transferencia CUP';
+          } else if (lfp.includes('efectivo') && lfp.includes('usd')) {
+            formaPago.value = 'Efectivo USD';
+          } else if (lfp.includes('efectivo') && lfp.includes('cup')) {
+            formaPago.value = 'Efectivo CUP';
+          } else if (lfp.includes('efectivo')) {
+            formaPago.value = 'Efectivo CUP';
+          } else {
+            formaPago.value = formaPagoOptions[0];
+          }
         }
+
+        // populate transferencia amount if present in initialData
+        let cp = 0;
+        if (props.initialData && typeof props.initialData.cantidad_pagada_transferencia_cup !== 'undefined') {
+          cp = Number(props.initialData.cantidad_pagada_transferencia_cup) || 0;
+        } else if (props.initialData && props.initialData.data && typeof props.initialData.data.cantidad_pagada_transferencia_cup !== 'undefined') {
+          cp = Number(props.initialData.data.cantidad_pagada_transferencia_cup) || 0;
+        }
+        // Note: cantidad_pagada_transferencia_cup is now per-item, populated above in newItem mapping
       } catch (e) {
         formaPago.value = formaPagoOptions[0];
       }

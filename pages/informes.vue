@@ -79,6 +79,17 @@
                 <div class="flex items-start justify-between flex-col sm:flex-row gap-2 sm:gap-0">
                   <div>
                     <div class="flex items-center gap-3">
+                      <span class="w-4 h-4 rounded-sm bg-red-500 inline-block"></span>
+                      <span class="font-medium">Salidas (Pérdidas)</span>
+                    </div>
+                    <div class="text-xs text-gray-500">Sumatoria de (<em>cantidad * producto.costo_usd</em>) de las salidas (pérdidas).</div>
+                  </div>
+                  <div class="font-semibold text-right">{{ salidasTotal.toFixed(2) }} <span class="text-sm text-gray-500">({{ percentages[3].toFixed(1) }}%)</span></div>
+                </div>
+
+                <div class="flex items-start justify-between flex-col sm:flex-row gap-2 sm:gap-0">
+                  <div>
+                    <div class="flex items-center gap-3">
                       <span class="w-4 h-4 rounded-sm border border-gray-300 inline-block"></span>
                       <span class="font-medium">Costo Ventas (USD)</span>
                     </div>
@@ -93,7 +104,7 @@
                       <span class="w-4 h-4 rounded-sm border border-gray-300 inline-block"></span>
                       <span class="font-medium">Ganancia (Ventas - Costos)</span>
                     </div>
-                    <div class="text-xs text-gray-500">Ganancia neta: <em>Ventas - Costo Ventas</em></div>
+                    <div class="text-xs text-gray-500">Ganancia neta: <em>Ventas - Costos-de-ventas - Pérdidas-de-salidas</em></div>
                   </div>
                   <div class="font-semibold text-right">{{ gananciaTotal.toFixed(2) }}</div>
                 </div>
@@ -284,6 +295,7 @@ const comprasTotal = ref(0);
 const inventarioTotal = ref(0);
 const ventasTotal = ref(0);
 const costoVentasTotal = ref(0);
+const salidasTotal = ref(0);
 
 async function fetchJson(url, token) {
   const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json', 'Authorization': token } });
@@ -307,7 +319,7 @@ function safeNum(v) {
 
 async function generateInformeA() {
   isLoadingInformeA.value = true;
-  comprasTotal.value = inventarioTotal.value = ventasTotal.value = costoVentasTotal.value = 0;
+  comprasTotal.value = inventarioTotal.value = ventasTotal.value = costoVentasTotal.value = salidasTotal.value = 0;
   try {
     const token = localStorage.getItem('token');
     // /entrada
@@ -344,6 +356,16 @@ async function generateInformeA() {
     }
     ventasTotal.value = ventasSum;
     costoVentasTotal.value = costoVentasSum;
+
+    // /salida (pérdidas)
+    const salidas = await fetchJson(`${config.public.backendHost}/salida`, token).catch(err => { console.error(err); return []; });
+    let salidasSum = 0;
+    for (const s of salidas || []) {
+      const cantidad = safeNum(s.cantidad);
+      const costo_cup = safeNum(s.costo_producto_usd);
+      salidasSum += cantidad * costo_cup;
+    }
+    salidasTotal.value = salidasSum;
   } catch (err) {
     console.error('Error generating informe A:', err);
   } finally {
@@ -353,9 +375,10 @@ async function generateInformeA() {
 
 const pieStyle = computed(() => {
   // Mostrar en el gráfico solo las 3 primeras categorías (sin el costo de ventas)
-  const allValues = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, costoVentasTotal.value];
-  const visibleValues = allValues.slice(0, 3);
-  const colors = ['#F97316', '#0369A1', '#10B981'];
+  const allValues = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, salidasTotal.value, costoVentasTotal.value];
+  // Mostrar en el gráfico las 4 principales categorías: compras, inventario, ventas, salidas
+  const visibleValues = allValues.slice(0, 4);
+  const colors = ['#F97316', '#0369A1', '#10B981', '#EF4444'];
   const visibleTotal = visibleValues.reduce((s, v) => s + Math.max(0, v), 0);
   const gap = 0.6; // gap percent between slices
   let acc = 0;
@@ -387,15 +410,15 @@ const pieStyle = computed(() => {
 });
 
 const percentages = computed(() => {
-  const values = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, costoVentasTotal.value];
+  const values = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, salidasTotal.value, costoVentasTotal.value];
   const total = values.reduce((s, v) => s + Math.max(0, v), 0) || 0;
-  if (total === 0) return [0, 0, 0, 0];
+  if (total === 0) return values.map(() => 0);
   return values.map(v => (Math.max(0, v) / total) * 100);
 });
 
 // Ganancia: ventas - costo de ventas (no se grafica, solo se muestra en la leyenda)
 const gananciaTotal = computed(() => {
-  return (ventasTotal.value || 0) - (costoVentasTotal.value || 0);
+  return (ventasTotal.value || 0) - (costoVentasTotal.value || 0) - (salidasTotal.value || 0);
 });
 </script>
 

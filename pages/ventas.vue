@@ -203,7 +203,7 @@
                 </div>
                 <div class="bg-purple-100 text-purple-800 rounded p-3">
                   <div class="text-sm font-medium">Total Efectivo USD</div>
-                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumEfectivoUSD ?? 0, 5) }}</div>
+                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumEfectivoUSD ?? 0, 2) }}</div>
                 </div>
               </div>
             </div>
@@ -217,7 +217,7 @@
                 </div>
                 <div class="bg-indigo-100 text-indigo-800 rounded p-3">
                   <div class="text-sm font-medium">Total Transferencia USD</div>
-                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumTransferenciaUSD ?? 0, 5) }}</div>
+                  <div class="text-lg font-bold">{{ formatNumber(paginationData.sumTransferenciaUSD ?? 0, 2) }}</div>
                 </div>
               </div>
             </div>

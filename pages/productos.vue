@@ -78,6 +78,16 @@
             </svg>
             Exportar a Excel
           </button>
+          <!-- Nuevo botón para administradores: Exportar Precios +30% -->
+          <button v-if="isAdmin" @click="exportPreciosPlus30"
+            class="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            Exportar Precios +30%
+          </button>
           <button v-if="!isVendedor && !isInvitado" @click="exportToExcelWithVentasCompras"
             class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
@@ -992,6 +1002,103 @@ async function exportToExcelWithVentasCompras() {
     errorBanner.value = null;
   } catch (error) {
     console.error('Error al exportar a Excel con ventas y compras:', error);
+    errorBanner.value = {
+      title: 'Error',
+      description: 'Ocurrió un error al exportar los datos.',
+      type: 'error'
+    };
+  }
+}
+
+// Nueva función para exportar Precios +30% (solo administradores)
+async function exportPreciosPlus30() {
+  errorBanner.value = {
+    title: 'Consultando datos',
+    description: 'Se están consultando los datos, la descarga comenzará en breve.',
+    type: 'info'
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const config = useRuntimeConfig();
+
+    // Mismos filtros que la tabla de productos
+    const bodyData = {
+      codigo: searchCodigo.value,
+      nombre: searchNombre.value,
+      precio: {
+        min: searchPrecioMin.value ? Number(searchPrecioMin.value) : undefined,
+        max: searchPrecioMax.value ? Number(searchPrecioMax.value) : undefined
+      },
+      nota: searchNota.value
+    };
+    if (!bodyData.precio.min && !bodyData.precio.max) delete bodyData.precio;
+    else {
+      if (!bodyData.precio.min) delete bodyData.precio.min;
+      if (!bodyData.precio.max) delete bodyData.precio.max;
+    }
+
+    const response = await fetch(`${config.public.backendHost}/Producto/filterProductos/1/${totalProductos.value}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(bodyData)
+    });
+
+    if (response.status === 401) {
+      errorBanner.value = {
+        title: 'Sesión Expirada',
+        description: 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+        type: 'warning'
+      };
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setTimeout(() => {
+        navigateTo('/');
+      }, 3000);
+      return;
+    }
+    if (response.status === 403) {
+      errorBanner.value = {
+        title: 'Acceso Denegado',
+        description: 'No tienes permisos para realizar esta acción o acceder a esta información.',
+        type: 'error'
+      };
+      return;
+    }
+    if (!response.ok) {
+      const errorData = await response.json();
+      errorBanner.value = {
+        title: 'Error al consultar datos',
+        description: errorData.error || 'Ocurrió un error al consultar los datos.',
+        type: 'error'
+      };
+      return;
+    }
+
+    const data = await response.json();
+
+    // Mapeo con las columnas solicitadas
+    const exportData = data.data.map(item => ({
+      'Producto': item.nombre,
+      'UM': item.unidadMedida,
+      'Precio Costo': Number(item.costo).toFixed(2),
+      'Hasta +30%': (Number(item.costo) * 1.3).toFixed(2),
+      'Precio Venta': Number(item.precio).toFixed(2)
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Precios +30%');
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `precios_mas_30_${date}.xlsx`);
+
+    errorBanner.value = null;
+  } catch (error) {
+    console.error('Error al exportar precios +30%:', error);
     errorBanner.value = {
       title: 'Error',
       description: 'Ocurrió un error al exportar los datos.',

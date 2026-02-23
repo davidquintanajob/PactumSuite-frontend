@@ -348,11 +348,11 @@ async function generateInformeA() {
     let costoVentasSum = 0;
     for (const v of ventas || []) {
       const precio_cobrado = safeNum(v.precio_cobrado);
-      const costo_venta = safeNum(v.costo_venta);
+      const costo_venta_usd = safeNum(v.costo_venta_usd);
       const cantidad = safeNum(v.cantidad);
       const cambio = safeNum(v.cambioUSD_al_vender) || 1;
       ventasSum += (precio_cobrado * cantidad) / cambio;
-      costoVentasSum += (costo_venta * cantidad) / cambio;
+      costoVentasSum += (costo_venta_usd * cantidad);
     }
     ventasTotal.value = ventasSum;
     costoVentasTotal.value = costoVentasSum;

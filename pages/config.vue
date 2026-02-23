@@ -151,10 +151,12 @@ const save = async () => {
       body: JSON.stringify(payload)
     })
     try {
-      const raw = localStorage.getItem('.config')
+      const raw = localStorage.getItem('config')
       const parsed = raw ? JSON.parse(raw) : {}
       parsed.cambio_moneda = payload.cambio_moneda
-      localStorage.setItem('.config', JSON.stringify(parsed))
+      console.log(parsed);
+      
+      localStorage.setItem('config', JSON.stringify(parsed))
     } catch (e) {
       console.warn('No se pudo actualizar localStorage', e)
     }

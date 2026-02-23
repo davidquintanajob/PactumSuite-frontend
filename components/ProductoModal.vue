@@ -398,7 +398,7 @@ function onPrecioUsdInput(e) {
     return;
   }
   const localVal = n * cambio;
-  formData.value.precio = localVal.toFixed(2);
+  formData.value.precio = localVal.toFixed(5);
 }
 
 function onCostoInput(e) {
@@ -422,7 +422,7 @@ function onCostoUsdInput(e) {
     return;
   }
   const localVal = n * cambio;
-  formData.value.costo = localVal.toFixed(2);
+  formData.value.costo = localVal.toFixed(5);
 }
 
 const handleSubmit = async () => {

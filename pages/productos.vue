@@ -1087,9 +1087,10 @@ async function exportPreciosPlus30() {
       .map(item => ({
         'Producto': item.nombre,
         'UM': item.unidadMedida,
-        'Precio Costo': Number(item.costo).toFixed(2),
-        'Hasta +30%': (Number(item.costo) * 1.3).toFixed(2),
-        'Precio Venta': Number(item.precio_inspectores_cup).toFixed(2)
+        'Precio Costo': Number(item.precio_inspectores_cup).toFixed(2),
+        'Hasta +30%': (Number(item.precio_inspectores_cup) * 1.3).toFixed(2),
+        'Precio Venta': Number(item.precio).toFixed(2),
+        'Fecha de Vencimiento': ''
       }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);

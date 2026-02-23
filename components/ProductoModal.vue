@@ -74,6 +74,13 @@
                 class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ingrese el costo en USD" />
             </div>
+            <!-- Precio Inspectores CUP -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Precio Inspectores CUP</label>
+              <input v-model="formData.precio_inspectores_cup" @input="onPrecioInspectoresInput" type="number" step="any" min="0" :readonly="isViewing" :disabled="isViewing || isLoading"
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ingrese el precio para inspectores (CUP)" />
+            </div>
           <!-- Unidad de Medida -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Unidad de Medida</label>
@@ -246,7 +253,8 @@ const formData = ref({
   cantidadExistencia: 0,
   costo: 0,
   precio_usd: '',
-  costo_usd: ''
+  costo_usd: '',
+  precio_inspectores_cup: 0
 });
 
 // cambio de moneda desde config en localStorage
@@ -313,7 +321,8 @@ watch(() => props.producto, (producto) => {
       cantidadExistencia: producto.cantidadExistencia || 0,
       costo: producto.costo || 0,
       precio_usd: producto.precio_usd !== undefined && producto.precio_usd !== null ? String(producto.precio_usd) : '',
-      costo_usd: producto.costo_usd !== undefined && producto.costo_usd !== null ? String(producto.costo_usd) : ''
+      costo_usd: producto.costo_usd !== undefined && producto.costo_usd !== null ? String(producto.costo_usd) : '',
+      precio_inspectores_cup: producto.precio_inspectores_cup !== undefined && producto.precio_inspectores_cup !== null ? Number(producto.precio_inspectores_cup) : 0
     };
     // mantener foto existente si la hay (asegurar URL completa)
     if (producto.foto) {
@@ -340,7 +349,8 @@ watch(() => props.producto, (producto) => {
       cantidadExistencia: 0,
       costo: 0,
       precio_usd: '',
-      costo_usd: ''
+      costo_usd: '',
+      precio_inspectores_cup: 0
     };
     fotoBase64.value = null;
     fotoName.value = null;
@@ -425,6 +435,16 @@ function onCostoUsdInput(e) {
   formData.value.costo = localVal.toFixed(5);
 }
 
+function onPrecioInspectoresInput(e) {
+  const val = e && e.target ? e.target.value : formData.value.precio_inspectores_cup;
+  const n = Number(val);
+  if (isNaN(n) || n < 0) {
+    formData.value.precio_inspectores_cup = 0;
+    return;
+  }
+  formData.value.precio_inspectores_cup = n;
+}
+
 const handleSubmit = async () => {
   errorMsg.value = '';
   const requiredFields = ['codigo', 'nombre', 'unidadMedida', 'tipoProducto'];
@@ -464,6 +484,13 @@ const handleSubmit = async () => {
       if (isAdmin.value) {
         if (formData.value.precio_usd !== '' && formData.value.precio_usd !== null && !isNaN(Number(formData.value.precio_usd))) payload.precio_usd = Number(formData.value.precio_usd);
         if (formData.value.costo_usd !== '' && formData.value.costo_usd !== null && !isNaN(Number(formData.value.costo_usd))) payload.costo_usd = Number(formData.value.costo_usd);
+      }
+      // Incluir precio_inspectores_cup (siempre, con validación de no negativos)
+      const precioInspectores = Number(formData.value.precio_inspectores_cup);
+      if (!isNaN(precioInspectores) && precioInspectores >= 0) {
+        payload.precio_inspectores_cup = precioInspectores;
+      } else {
+        payload.precio_inspectores_cup = 0;
       }
       // Incluir foto sólo si el usuario la proporcionó en esta sesión
       if (fotoUserProvided.value && fotoBase64.value) payload.foto = fotoBase64.value;

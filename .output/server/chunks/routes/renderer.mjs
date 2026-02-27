@@ -75,7 +75,7 @@ function createHead(options = {}) {
   return head;
 }
 
-const appHead = {"meta":[{"charset":"utf-8"},{"name":"viewport","content":"width=device-width, initial-scale=1"},{"name":"description","content":"Platforma para la gestión eficiente de contratos, entidades y trabajadores."},{"name":"theme-color","content":"#93C5FD"},{"name":"keywords","content":"contratos, gestión, trabajadores, entidades, ofertas"},{"property":"og:type","content":"website"},{"property":"og:locale","content":"es_ES"},{"property":"og:site_name","content":"Pactum"},{"name":"twitter:card","content":"summary_large_image"}],"link":[{"rel":"icon","type":"image/png","href":"/logo.png"},{"rel":"canonical","href":"http://localhost:4012"}],"style":[],"script":[{"type":"application/ld+json","innerHTML":"{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Pactum\",\"url\":\"http://localhost:4012\",\"logo\":\"http://localhost:4012/logo.png\"}"}],"noscript":[],"title":"Pactum","titleTemplate":"%s | Pactum","htmlAttrs":{"lang":"es"}};
+const appHead = {"meta":[{"charset":"utf-8"},{"name":"viewport","content":"width=device-width, initial-scale=1"},{"name":"description","content":"Platforma para la gestión eficiente de contratos, entidades y trabajadores."},{"name":"theme-color","content":"#93C5FD"},{"name":"keywords","content":"contratos, gestión, trabajadores, entidades, ofertas"},{"property":"og:type","content":"website"},{"property":"og:locale","content":"es_ES"},{"property":"og:site_name","content":"Pactum"},{"name":"twitter:card","content":"summary_large_image"}],"link":[{"rel":"icon","type":"image/png","href":"/logo.png"},{"rel":"canonical","href":"http://31.170.165.44:3012"}],"style":[],"script":[{"type":"application/ld+json","innerHTML":"{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Pactum\",\"url\":\"http://31.170.165.44:3012\",\"logo\":\"http://31.170.165.44:3012/logo.png\"}"}],"noscript":[],"title":"Pactum","titleTemplate":"%s | Pactum","htmlAttrs":{"lang":"es"}};
 
 const appRootTag = "div";
 
@@ -267,7 +267,7 @@ async function renderInlineStyles(usedModules) {
 
 const renderSSRHeadOptions = {"omitLineBreaks":false};
 
-const entryFileName = "CgUhvIgb.js";
+const entryFileName = "BVNNX7O1.js";
 
 globalThis.__buildAssetsURL = buildAssetsURL;
 globalThis.__publicAssetsURL = publicAssetsURL;

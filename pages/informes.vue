@@ -41,24 +41,14 @@
               </div>
             </div>
 
-            <!-- Progress / error modal for Informe A (similar behaviour to Retiros view) -->
-            <div v-if="isMetricsLoading || metricsError" class="fixed inset-0 z-[20000] flex items-center justify-center bg-black/60">
+            <!-- Progress modal for Informe A (error no bloquea vista) -->
+            <div v-if="isMetricsLoading" class="fixed inset-0 z-[20000] flex items-center justify-center bg-black/60">
               <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4">
-                <div v-if="isMetricsLoading">
-                  <h3 class="text-lg font-semibold mb-2">Consultando datos del informe...</h3>
-                  <div class="w-full bg-gray-100 rounded h-3 overflow-hidden mb-3">
-                    <div :style="{ width: metricsProgressPercent + '%' }" class="h-3 bg-primary transition-all"></div>
-                  </div>
-                  <div class="text-sm text-gray-600">Progreso: {{ metricsCompleted }} / {{ metricsTotalSteps }} — {{ metricsProgressPercent }}%</div>
+                <h3 class="text-lg font-semibold mb-2">Consultando datos del informe...</h3>
+                <div class="w-full bg-gray-100 rounded h-3 overflow-hidden mb-3">
+                  <div :style="{ width: metricsProgressPercent + '%' }" class="h-3 bg-primary transition-all"></div>
                 </div>
-                <div v-else-if="metricsError">
-                  <h3 class="text-lg font-semibold mb-2 text-red-600">Ocurrió un error</h3>
-                  <p class="text-sm text-gray-700 mb-4">{{ metricsErrorMessage || 'ocurrió un error al consultar o calcular datos' }}</p>
-                  <div class="flex gap-2 justify-end">
-                    <button @click="() => window.location.reload()" class="px-4 py-2 bg-primary text-white rounded">Refrescar página</button>
-                    <button @click="() => navigateTo('/')" class="px-4 py-2 bg-gray-200 rounded">Volver al inicio</button>
-                  </div>
-                </div>
+                <div class="text-sm text-gray-600">Progreso: {{ metricsCompleted }} / {{ metricsTotalSteps }} — {{ metricsProgressPercent }}%</div>
               </div>
             </div>
 

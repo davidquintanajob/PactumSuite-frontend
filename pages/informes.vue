@@ -29,7 +29,7 @@
       </div>
 
       <!-- Área donde se mostrará el informe (placeholder por ahora) -->
-      <div class="mt-6 bg-white rounded-lg shadow-md p-6 h-[60vh] flex flex-col">
+      <div class="mt-6 bg-white rounded-lg shadow-md p-6 h-[80vh] flex flex-col">
         <h3 class="text-xl font-semibold mb-2">Vista de Informe</h3>
         <div class="flex-1 border-2 border-dashed border-gray-200 rounded p-4 text-gray-400">
           <!-- Informe A (gráfico + leyenda) -->
@@ -38,6 +38,27 @@
               <div v-if="isLoadingInformeA" class="text-center">Cargando informe...</div>
               <div v-else class="relative w-48 h-48 md:w-64 md:h-64 max-w-full">
                 <div class="absolute inset-0 rounded-full" :style="{ background: pieStyle, borderRadius: '9999px', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' }"></div>
+              </div>
+            </div>
+
+            <!-- Progress / error modal for Informe A (similar behaviour to Retiros view) -->
+            <div v-if="isMetricsLoading || metricsError" class="fixed inset-0 z-[20000] flex items-center justify-center bg-black/60">
+              <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4">
+                <div v-if="isMetricsLoading">
+                  <h3 class="text-lg font-semibold mb-2">Consultando datos del informe...</h3>
+                  <div class="w-full bg-gray-100 rounded h-3 overflow-hidden mb-3">
+                    <div :style="{ width: metricsProgressPercent + '%' }" class="h-3 bg-primary transition-all"></div>
+                  </div>
+                  <div class="text-sm text-gray-600">Progreso: {{ metricsCompleted }} / {{ metricsTotalSteps }} — {{ metricsProgressPercent }}%</div>
+                </div>
+                <div v-else-if="metricsError">
+                  <h3 class="text-lg font-semibold mb-2 text-red-600">Ocurrió un error</h3>
+                  <p class="text-sm text-gray-700 mb-4">{{ metricsErrorMessage || 'ocurrió un error al consultar o calcular datos' }}</p>
+                  <div class="flex gap-2 justify-end">
+                    <button @click="() => window.location.reload()" class="px-4 py-2 bg-primary text-white rounded">Refrescar página</button>
+                    <button @click="() => navigateTo('/')" class="px-4 py-2 bg-gray-200 rounded">Volver al inicio</button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -90,6 +111,17 @@
                 <div class="flex items-start justify-between flex-col sm:flex-row gap-2 sm:gap-0">
                   <div>
                     <div class="flex items-center gap-3">
+                          <span class="w-4 h-4 rounded-sm bg-white border border-gray-300 inline-block"></span>
+                          <span class="font-medium">Retiros (USD)</span>
+                        </div>
+                    <div class="text-xs text-gray-500">Sumatoria convertida en USD: (<em>cantidad_retirada_cup / cambio_moneda</em>) + <em>cantidad_retirada_usd</em>.</div>
+                  </div>
+                  <div class="font-semibold text-right">{{ retirosTotal.toFixed(2) }}</div>
+                </div>
+
+                <div class="flex items-start justify-between flex-col sm:flex-row gap-2 sm:gap-0">
+                  <div>
+                    <div class="flex items-center gap-3">
                       <span class="w-4 h-4 rounded-sm border border-gray-300 inline-block"></span>
                       <span class="font-medium">Costo Ventas (USD)</span>
                     </div>
@@ -102,9 +134,9 @@
                   <div>
                     <div class="flex items-center gap-3">
                       <span class="w-4 h-4 rounded-sm border border-gray-300 inline-block"></span>
-                      <span class="font-medium">Ganancia (Ventas - Costos)</span>
+                      <span class="font-medium">Ganancia (Ventas - Costos - Retiros)</span>
                     </div>
-                    <div class="text-xs text-gray-500">Ganancia neta: <em>Ventas - Costos-de-ventas - Pérdidas-de-salidas</em></div>
+                    <div class="text-xs text-gray-500">Ganancia neta: <em>Ventas - Costo de ventas - Pérdidas - Retiros</em></div>
                   </div>
                   <div class="font-semibold text-right">{{ gananciaTotal.toFixed(2) }}</div>
                 </div>
@@ -296,6 +328,17 @@ const inventarioTotal = ref(0);
 const ventasTotal = ref(0);
 const costoVentasTotal = ref(0);
 const salidasTotal = ref(0);
+// retiros and progress state
+const retirosTotal = ref(0);
+const isMetricsLoading = ref(false);
+const metricsTotalSteps = 5;
+const metricsCompleted = ref(0);
+const metricsError = ref(false);
+const metricsErrorMessage = ref('');
+
+const metricsProgressPercent = computed(() => {
+  return Math.min(100, Math.round((metricsCompleted.value / metricsTotalSteps) * 100));
+});
 
 async function fetchJson(url, token) {
   const resp = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json', 'Authorization': token } });
@@ -319,65 +362,128 @@ function safeNum(v) {
 
 async function generateInformeA() {
   isLoadingInformeA.value = true;
-  comprasTotal.value = inventarioTotal.value = ventasTotal.value = costoVentasTotal.value = salidasTotal.value = 0;
+  isMetricsLoading.value = true;
+  metricsCompleted.value = 0;
+  metricsError.value = false;
+  metricsErrorMessage.value = '';
+  comprasTotal.value = inventarioTotal.value = ventasTotal.value = costoVentasTotal.value = salidasTotal.value = retirosTotal.value = 0;
   try {
     const token = localStorage.getItem('token');
-    // /entrada
-    const entradas = await fetchJson(`${config.public.backendHost}/entrada`, token).catch(err => { console.error(err); return []; });
-    let compras = 0;
-    for (const e of entradas || []) {
-      const cantidad = safeNum(e.cantidadEntrada);
-      const costo_usd = safeNum(e.costo_usd);
-      compras += cantidad * costo_usd;
-    }
-    comprasTotal.value = compras;
+    if (!token) { navigateTo('/login'); return; }
 
-    // /producto
-    const productos = await fetchJson(`${config.public.backendHost}/producto`, token).catch(err => { console.error(err); return []; });
-    let inventario = 0;
-    for (const p of productos || []) {
-      const costo_usd = safeNum(p.costo_usd);
-      const cantidadExist = safeNum(p.cantidadExistencia);
-      inventario += costo_usd * cantidadExist;
-    }
-    inventarioTotal.value = inventario;
+    // 1) /entrada
+    let entradas = [];
+    try {
+      entradas = await fetchJson(`${config.public.backendHost}/entrada`, token);
+    } catch (e) { console.error(e); metricsError.value = true; metricsErrorMessage.value = 'Error consultando entradas'; }
+    metricsCompleted.value += 1;
+    try {
+      let compras = 0;
+      for (const e of entradas || []) {
+        const cantidad = safeNum(e.cantidadEntrada);
+        const costo_usd = safeNum(e.costo_usd);
+        compras += cantidad * costo_usd;
+      }
+      comprasTotal.value = compras;
+    } catch (e) { console.error(e); }
 
-    // /venta
-    const ventas = await fetchJson(`${config.public.backendHost}/venta`, token).catch(err => { console.error(err); return []; });
-    let ventasSum = 0;
-    let costoVentasSum = 0;
-    for (const v of ventas || []) {
-      const precio_cobrado = safeNum(v.precio_cobrado);
-      const costo_venta_usd = safeNum(v.costo_venta_usd);
-      const cantidad = safeNum(v.cantidad);
-      const cambio = safeNum(v.cambioUSD_al_vender) || 1;
-      ventasSum += (precio_cobrado * cantidad) / cambio;
-      costoVentasSum += (costo_venta_usd * cantidad);
-    }
-    ventasTotal.value = ventasSum;
-    costoVentasTotal.value = costoVentasSum;
+    // 2) /producto
+    let productos = [];
+    try {
+      productos = await fetchJson(`${config.public.backendHost}/producto`, token);
+    } catch (e) { console.error(e); metricsError.value = true; metricsErrorMessage = 'Error consultando productos'; }
+    metricsCompleted.value += 1;
+    try {
+      let inventario = 0;
+      for (const p of productos || []) {
+        const costo_usd = safeNum(p.costo_usd);
+        const cantidadExist = safeNum(p.cantidadExistencia);
+        inventario += costo_usd * cantidadExist;
+      }
+      inventarioTotal.value = inventario;
+    } catch (e) { console.error(e); }
 
-    // /salida (pérdidas)
-    const salidas = await fetchJson(`${config.public.backendHost}/salida`, token).catch(err => { console.error(err); return []; });
-    let salidasSum = 0;
-    for (const s of salidas || []) {
-      const cantidad = safeNum(s.cantidad);
-      const costo_cup = safeNum(s.costo_producto_usd);
-      salidasSum += cantidad * costo_cup;
-    }
-    salidasTotal.value = salidasSum;
+    // 3) /venta
+    let ventas = [];
+    try {
+      ventas = await fetchJson(`${config.public.backendHost}/venta`, token);
+    } catch (e) { console.error(e); metricsError.value = true; metricsErrorMessage = 'Error consultando ventas'; }
+    metricsCompleted.value += 1;
+    try {
+      let ventasSum = 0;
+      let costoVentasSum = 0;
+      for (const v of ventas || []) {
+        const precio_cobrado = safeNum(v.precio_cobrado);
+        const costo_venta_usd = safeNum(v.costo_venta_usd);
+        const cantidad = safeNum(v.cantidad);
+        const cambio = safeNum(v.cambioUSD_al_vender) || 1;
+        ventasSum += (precio_cobrado * cantidad) / cambio;
+        costoVentasSum += (costo_venta_usd * cantidad);
+      }
+      ventasTotal.value = ventasSum;
+      costoVentasTotal.value = costoVentasSum;
+    } catch (e) { console.error(e); }
+
+    // 4) /salida (pérdidas)
+    let salidas = [];
+    try {
+      salidas = await fetchJson(`${config.public.backendHost}/salida`, token);
+    } catch (e) { console.error(e); metricsError.value = true; metricsErrorMessage = 'Error consultando salidas'; }
+    metricsCompleted.value += 1;
+    try {
+      let salidasSum = 0;
+      for (const s of salidas || []) {
+        const cantidad = safeNum(s.cantidad);
+        const costo_cup = safeNum(s.costo_producto_usd);
+        salidasSum += cantidad * costo_cup;
+      }
+      salidasTotal.value = salidasSum;
+    } catch (e) { console.error(e); }
+
+    // 5) /Retiro/filterRetiros - calcular retiros en USD: (cantidad_retirada_cup / cambio_moneda) + cantidad_retirada_usd
+    let retiros = [];
+    try {
+      const retiroRes = await fetch(`${config.public.backendHost}/Retiro/filterRetiros/null/null`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': token },
+        body: JSON.stringify({})
+      });
+      if (retiroRes.ok) {
+        const retiroData = await retiroRes.json();
+        retiros = retiroData && retiroData.data ? retiroData.data : [];
+      } else {
+        console.error('retiros fetch status', retiroRes.status);
+        metricsError.value = true;
+        metricsErrorMessage = 'Error consultando retiros';
+      }
+    } catch (e) { console.error(e); metricsError.value = true; metricsErrorMessage = 'Error consultando retiros'; }
+    metricsCompleted.value += 1;
+    try {
+      let retirosSum = 0;
+      for (const r of retiros || []) {
+        const cup = safeNum(r.cantidad_retirada_cup);
+        const usd = safeNum(r.cantidad_retirada_usd);
+        const cambio = safeNum(r.cambio_moneda) || 1;
+        const convertedCup = cambio && cambio !== 0 ? (cup / cambio) : cup;
+        retirosSum += convertedCup + usd;
+      }
+      retirosTotal.value = retirosSum;
+    } catch (e) { console.error(e); }
+
   } catch (err) {
     console.error('Error generating informe A:', err);
+    metricsError.value = true;
+    metricsErrorMessage.value = 'Ocurrió un error generando el informe';
   } finally {
     isLoadingInformeA.value = false;
+    isMetricsLoading.value = false;
+    metricsCompleted.value = metricsTotalSteps;
   }
 }
 
 const pieStyle = computed(() => {
-  // Mostrar en el gráfico solo las 3 primeras categorías (sin el costo de ventas)
-  const allValues = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, salidasTotal.value, costoVentasTotal.value];
-  // Mostrar en el gráfico las 4 principales categorías: compras, inventario, ventas, salidas
-  const visibleValues = allValues.slice(0, 4);
+  // Mostrar en el gráfico las categorías: compras, inventario, ventas, salidas (EXCLUIMOS retiros del gráfico)
+  const visibleValues = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, salidasTotal.value];
   const colors = ['#F97316', '#0369A1', '#10B981', '#EF4444'];
   const visibleTotal = visibleValues.reduce((s, v) => s + Math.max(0, v), 0);
   const gap = 0.6; // gap percent between slices
@@ -410,7 +516,7 @@ const pieStyle = computed(() => {
 });
 
 const percentages = computed(() => {
-  const values = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, salidasTotal.value, costoVentasTotal.value];
+  const values = [comprasTotal.value, inventarioTotal.value, ventasTotal.value, salidasTotal.value, retirosTotal.value, costoVentasTotal.value];
   const total = values.reduce((s, v) => s + Math.max(0, v), 0) || 0;
   if (total === 0) return values.map(() => 0);
   return values.map(v => (Math.max(0, v) / total) * 100);
@@ -418,7 +524,7 @@ const percentages = computed(() => {
 
 // Ganancia: ventas - costo de ventas (no se grafica, solo se muestra en la leyenda)
 const gananciaTotal = computed(() => {
-  return (ventasTotal.value || 0) - (costoVentasTotal.value || 0) - (salidasTotal.value || 0);
+  return (ventasTotal.value || 0) - (costoVentasTotal.value || 0) - (salidasTotal.value || 0) - (retirosTotal.value || 0);
 });
 </script>
 

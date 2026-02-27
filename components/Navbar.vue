@@ -157,6 +157,7 @@ const options = [
     { label: "Productos", src: "/Productos.png", link: "/productos", roles: ["Administrador", "Comercial", "Invitado", "Vendedor"] },
     { label: "Ventas", src: "/carritoDeCompras.png", link: "/ventas", roles: ["Administrador", "Comercial", "Invitado", "Vendedor"] },
     { label: "Entradas", src: "/agregar-producto.png", link: "/entradas", roles: ["Administrador", "Comercial", "Invitado"] },
+    { label: "Retiros de Ganancia", src: "/retiro-de-dinero.png", link: "/retiros", roles: ["Administrador", "Comercial"] },
     { label: "Salidas", src: "/ventas.png", link: "/salidas", roles: ["Administrador", "Comercial", "Invitado", "Vendedor"] },
     { label: "Facturas", src: "/Facturas.png", link: "/facturas", roles: ["Administrador", "Comercial", "Invitado"] },
     { label: "Servicios", src: "/Servicios.png", link: "/servicios", roles: ["Administrador", "Comercial", "Invitado"] },

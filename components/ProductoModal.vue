@@ -74,9 +74,9 @@
                 class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ingrese el costo en USD" />
             </div>
-            <!-- Precio Inspectores CUP -->
+            <!-- Costo Inspectores CUP -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Precio Inspectores CUP</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Costo Inspectores CUP</label>
               <input v-model="formData.precio_inspectores_cup" @input="onPrecioInspectoresInput" type="number" step="any" min="0" :readonly="isViewing" :disabled="isViewing || isLoading"
                 class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Ingrese el precio para inspectores (CUP)" />

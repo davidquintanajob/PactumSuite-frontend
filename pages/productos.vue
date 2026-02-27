@@ -1018,6 +1018,15 @@ async function exportPreciosPlus30() {
     type: 'info'
   };
 
+  // helper para formatear números con separador de miles en espacio y anteponer signo $
+  const formatNumberWithSpaces = (num) => {
+    const n = Number(num);
+    if (isNaN(n)) return '';
+    const parts = n.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return '$' + parts.join(',');
+  };
+
   try {
     const token = localStorage.getItem('token');
     const config = useRuntimeConfig();
@@ -1087,10 +1096,10 @@ async function exportPreciosPlus30() {
       .map(item => ({
         'Producto': item.nombre,
         'UM': item.unidadMedida,
-        'Precio Costo': Number(item.precio_inspectores_cup).toFixed(2),
-        'Hasta +30%': (Number(item.precio_inspectores_cup) * 1.3).toFixed(2),
-        'Precio Venta': Number(item.precio).toFixed(2),
-        'Fecha de Vencimiento': ''
+        'P.Costo': formatNumberWithSpaces(item.precio_inspectores_cup),
+        'Hasta +30%': formatNumberWithSpaces(Number(item.precio_inspectores_cup) * 1.3),
+        'P.Venta': formatNumberWithSpaces(item.precio),
+        'F.Venc': ''
       }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
